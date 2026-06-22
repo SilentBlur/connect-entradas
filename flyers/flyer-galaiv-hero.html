@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1080, initial-scale=1">
+<title>Gala IV - Hero</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+  :root{
+    --bg:#0A0A0A; --surface:#151412; --panel:#0F0E0C;
+    --gold:#C9A24B; --gold-bright:#E7C97D;
+    --gold-dim:rgba(201,162,75,.12); --gold-line:rgba(201,162,75,.30);
+    --ink:#F4EFE6; --muted:#9A9384; --dim:#5E584C;
+    --serif:'Playfair Display',Georgia,serif; --body:'Inter',system-ui,sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{background:#070605}
+  .stage{
+    position:relative;width:1080px;height:1350px;overflow:hidden;
+    background:
+      radial-gradient(1100px 640px at 50% -4%, rgba(201,162,75,.16), transparent 60%),
+      radial-gradient(900px 600px at 50% 112%, rgba(201,162,75,.07), transparent 60%),
+      var(--bg);
+    color:var(--ink);font-family:var(--body);
+    display:flex;flex-direction:column;align-items:center;
+    padding:90px 84px 78px;
+  }
+  .rombo-bg{
+    position:absolute;top:50%;left:50%;transform:translate(-50%,-46%);
+    width:760px;height:760px;opacity:.06;pointer-events:none;
+    background-color:var(--gold);
+    -webkit-mask:url('../assets/rombo-crop.png') center/contain no-repeat;
+            mask:url('../assets/rombo-crop.png') center/contain no-repeat;
+  }
+  .frame{position:absolute;inset:34px;border:1px solid var(--gold-line);pointer-events:none}
+  .frame::after{content:'';position:absolute;inset:6px;border:1px solid rgba(201,162,75,.10)}
+  .top{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;gap:16px}
+  .wm{width:300px;height:58px;background-color:var(--ink);
+    -webkit-mask:url('../assets/connect-white-crop.png') center/contain no-repeat;
+            mask:url('../assets/connect-white-crop.png') center/contain no-repeat;}
+  .presenta{font-size:16px;letter-spacing:13px;color:var(--muted);font-weight:500;padding-left:13px}
+  .mid{position:relative;z-index:2;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:30px;width:100%}
+  .eyebrow{font-size:18px;letter-spacing:8px;color:var(--gold);font-weight:600;text-transform:uppercase}
+  .title{width:880px;max-width:100%;aspect-ratio:7826/1431;background-color:var(--gold-bright);
+    -webkit-mask:url('../assets/gala-iv-logo.png') center/contain no-repeat;
+            mask:url('../assets/gala-iv-logo.png') center/contain no-repeat;}
+  .rule{width:160px;height:1px;background:linear-gradient(90deg,transparent,var(--gold-line),var(--gold),var(--gold-line),transparent)}
+  .sponsors{display:flex;align-items:stretch;width:620px;max-width:100%;margin-top:6px}
+  .sp{flex:1;display:flex;flex-direction:column;align-items:center;gap:14px;padding:0 22px}
+  .sp + .sp{border-left:1px solid var(--gold-line)}
+  .sp .lbl{font-size:12px;letter-spacing:5px;color:var(--muted);font-weight:500}
+  .logobox{height:46px;display:flex;align-items:center;justify-content:center}
+  .logo{background-color:var(--ink)}
+  .logo.boss{height:40px;aspect-ratio:962/270;
+    -webkit-mask:url('../assets/boss-logo.png') center/contain no-repeat;
+            mask:url('../assets/boss-logo.png') center/contain no-repeat;}
+  .logo.bacardi{height:40px;aspect-ratio:2398/389;
+    -webkit-mask:url('../assets/bacardi-wordmark-white.png') center/contain no-repeat;
+            mask:url('../assets/bacardi-wordmark-white.png') center/contain no-repeat;}
+  .bottom{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;gap:18px;width:100%}
+  .barra{
+    font-size:15px;letter-spacing:6px;color:var(--gold-bright);font-weight:600;text-transform:uppercase;
+    border:1px solid var(--gold-line);border-radius:50px;padding:11px 30px;background:var(--gold-dim);
+  }
+  .date{font-family:var(--serif);font-size:36px;letter-spacing:3px;color:var(--ink);font-weight:600}
+  .time{font-size:23px;letter-spacing:6px;color:var(--muted);font-weight:500}
+  .foot{margin-top:8px;display:flex;align-items:center;gap:16px;font-size:16px;letter-spacing:4px;color:var(--gold);font-weight:600}
+  .foot .rombo-s{width:18px;height:22px;background-color:var(--gold);
+    -webkit-mask:url('../assets/rombo-crop.png') center/contain no-repeat;
+            mask:url('../assets/rombo-crop.png') center/contain no-repeat;}
+</style>
+</head>
+<body>
+  <div class="stage">
+    <div class="rombo-bg"></div>
+    <div class="frame"></div>
+
+    <div class="top">
+      <div class="wm"></div>
+      <div class="presenta">PRESENTA</div>
+    </div>
+
+    <div class="mid">
+      <div class="eyebrow">Cuarto Aniversario</div>
+      <div class="title"></div>
+      <div class="rule"></div>
+      <div class="sponsors">
+        <div class="sp"><div class="lbl">PRESENTED BY</div><div class="logobox"><div class="logo boss"></div></div></div>
+        <div class="sp"><div class="lbl">POWERED BY</div><div class="logobox"><div class="logo bacardi" role="img" aria-label="Bacardi"></div></div></div>
+      </div>
+    </div>
+
+    <div class="bottom">
+      <div class="barra">Barra Libre Premium</div>
+      <div class="date">Sábado 18 de Julio · 2026</div>
+      <div class="time">10 PM A 5 AM</div>
+      <div class="foot"><span class="rombo-s"></span>@CONNECT.LIMA<span>·</span>#STAYCONNECTED</div>
+    </div>
+  </div>
+</body>
+</html>

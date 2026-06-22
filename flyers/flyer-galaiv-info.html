@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gala IV · Connect - Flyer informativo</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+
+  :root{
+    --bg:#0A0A0A;
+    --surface:#151412;
+    --surface-2:#1C1A17;
+    --panel:#0F0E0C;
+    --border:#2A271F;
+    --border-soft:#211F1A;
+    --gold:#C9A24B;
+    --gold-bright:#E7C97D;
+    --gold-dim:rgba(201,162,75,.12);
+    --gold-line:rgba(201,162,75,.30);
+    --ink:#F4EFE6;
+    --muted:#9A9384;
+    --dim:#5E584C;
+    --r:14px;
+    --serif:'Playfair Display',Georgia,serif;
+    --body:'Inter',system-ui,sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{ -webkit-text-size-adjust:100% }
+  body{
+    background:#070605;
+    color:var(--ink);
+    font-family:var(--body);
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+    display:flex;justify-content:center;
+    padding:28px 16px;
+  }
+
+  .stage{
+    position:relative;width:100%;max-width:1000px;
+    background:
+      radial-gradient(1100px 640px at 50% -4%, rgba(201,162,75,.13), transparent 60%),
+      radial-gradient(900px 700px at 50% 108%, rgba(201,162,75,.06), transparent 62%),
+      var(--bg);
+    border:1px solid var(--gold-line);
+    overflow:hidden;
+  }
+  .frame{position:absolute;inset:18px;border:1px solid rgba(201,162,75,.16);pointer-events:none;z-index:3}
+  .pad{position:relative;z-index:2;padding:64px 64px 52px}
+
+  .rombo-bg{
+    position:absolute;top:-40px;left:50%;transform:translateX(-50%);
+    width:640px;height:640px;opacity:.06;pointer-events:none;z-index:1;
+    background-color:var(--gold);
+    -webkit-mask:url('../assets/rombo-crop.png') center/contain no-repeat;
+            mask:url('../assets/rombo-crop.png') center/contain no-repeat;
+  }
+
+  /* ---------- HEADER ---------- */
+  .hero{display:flex;flex-direction:column;align-items:center;text-align:center;gap:18px}
+  .wm{width:230px;height:44px;background-color:var(--ink);
+    -webkit-mask:url('../assets/connect-white-crop.png') center/contain no-repeat;
+            mask:url('../assets/connect-white-crop.png') center/contain no-repeat;}
+  .presenta{font-size:14px;letter-spacing:11px;color:var(--muted);font-weight:500;padding-left:11px}
+  .gala{width:min(620px,82%);aspect-ratio:7826/1431;margin-top:10px;background-color:var(--gold-bright);
+    -webkit-mask:url('../assets/gala-iv-logo.png') center/contain no-repeat;
+            mask:url('../assets/gala-iv-logo.png') center/contain no-repeat;}
+  .aniv{font-size:15px;letter-spacing:8px;color:var(--gold);font-weight:600;text-transform:uppercase}
+  .sponsors{display:flex;align-items:stretch;width:540px;max-width:100%;margin-top:8px}
+  .sp{flex:1;display:flex;flex-direction:column;align-items:center;gap:10px;padding:0 20px}
+  .sp + .sp{border-left:1px solid var(--gold-line)}
+  .sp b{font-size:12px;letter-spacing:5px;color:var(--muted);font-weight:500}
+  .sp .logobox{height:40px;display:flex;align-items:center;justify-content:center}
+  .sp .logo{background-color:var(--ink)}
+  .sp .logo.boss{height:34px;aspect-ratio:962/270;
+    -webkit-mask:url('../assets/boss-logo.png') center/contain no-repeat;
+            mask:url('../assets/boss-logo.png') center/contain no-repeat;}
+  .sp .logo.bacardi{height:34px;aspect-ratio:2398/389;
+    -webkit-mask:url('../assets/bacardi-wordmark-white.png') center/contain no-repeat;
+            mask:url('../assets/bacardi-wordmark-white.png') center/contain no-repeat;}
+
+  /* ---------- KEY FACTS ---------- */
+  .facts{display:grid;grid-template-columns:repeat(4,1fr);margin-top:44px;
+    border:1px solid var(--gold-line);border-radius:var(--r);overflow:hidden;background:var(--surface)}
+  .fact{padding:18px 22px;display:flex;flex-direction:column;gap:6px}
+  .fact + .fact{border-left:1px solid var(--border)}
+  .fact .k{font-size:11px;letter-spacing:2.5px;text-transform:uppercase;color:var(--gold);font-weight:600}
+  .fact .v{font-family:var(--serif);font-size:19px;color:var(--ink);font-weight:600;letter-spacing:.3px}
+
+  /* ---------- SECTION HEADING ---------- */
+  .shead{display:flex;align-items:center;gap:22px;margin:54px 0 24px}
+  .shead h2{font-family:var(--serif);font-size:26px;letter-spacing:2px;color:var(--ink);font-weight:600;white-space:nowrap}
+  .shead::before,.shead::after{content:"";height:1px;background:var(--gold-line);flex:1}
+  .shead.center{justify-content:center}
+
+  /* ---------- BOXES ---------- */
+  .deluxe{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;
+    border:1px solid var(--gold-line);border-radius:var(--r);padding:20px 26px;background:var(--surface-2);margin-bottom:16px;
+    box-shadow:inset 0 1px 0 rgba(201,162,75,.10)}
+  .deluxe .dn{font-family:var(--serif);font-size:25px;font-weight:600;letter-spacing:.5px;color:var(--ink)}
+  .deluxe .dn small{display:block;font-family:var(--body);font-size:12px;letter-spacing:2px;color:var(--gold);font-weight:500;margin-top:4px;text-transform:uppercase}
+  .deluxe .dtag{font-size:13px;letter-spacing:2.5px;color:var(--gold-bright);font-weight:500;text-transform:uppercase;
+    border:1px dashed var(--gold-line);border-radius:50px;padding:10px 20px}
+
+  .boxgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .box{border:1px solid rgba(201,162,75,.16);border-radius:18px;background:var(--panel);padding:22px 20px;display:flex;flex-direction:column;gap:15px;
+    box-shadow:inset 0 1px 0 rgba(201,162,75,.10), 0 14px 32px -22px rgba(0,0,0,.95)}
+  .box-top{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+  .box-top .bn{font-family:var(--serif);font-size:27px;font-weight:600;letter-spacing:.5px;color:var(--ink)}
+  .box-top .cap{font-size:11px;letter-spacing:2px;color:var(--gold);font-weight:600;text-transform:uppercase;white-space:nowrap}
+  .prices{display:flex;gap:10px}
+  .pcell{flex:1;border:1px solid var(--gold-line);border-radius:11px;padding:11px 12px;text-align:center}
+  .pcell .pt{font-size:10.5px;letter-spacing:2px;font-weight:600;text-transform:uppercase;color:var(--muted)}
+  .pcell .pv{font-family:var(--serif);font-size:23px;font-weight:700;color:var(--gold-bright);margin-top:3px;letter-spacing:.3px}
+  .pcell.early{background:linear-gradient(180deg,var(--gold-bright),var(--gold));border-color:var(--gold-bright)}
+  .pcell.early .pt{color:#3a2c0c}
+  .pcell.early .pv{color:#160F03}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;border-top:1px solid var(--border);padding-top:14px}
+  .chip{font-size:11.5px;background:rgba(255,255,255,.03);padding:5px 10px;border-radius:50px;color:var(--muted);border:1px solid rgba(255,255,255,.06);letter-spacing:.3px}
+  .chip.incl{background:var(--gold-dim);color:var(--gold-bright);border-color:rgba(201,162,75,.28)}
+
+  /* ---------- STAND UP ---------- */
+  .tiers-wrap{border:1px solid var(--gold-line);border-radius:var(--r);background:var(--surface);overflow:hidden}
+  .tiers{display:grid;grid-template-columns:repeat(4,1fr)}
+  .tier{padding:24px 18px;text-align:center;display:flex;flex-direction:column;gap:8px}
+  .tier + .tier{border-left:1px solid var(--border)}
+  .tier .tn{font-family:var(--serif);font-size:18px;letter-spacing:.5px;color:var(--ink);font-weight:600}
+  .tier .tp{font-family:var(--serif);font-size:40px;font-weight:700;color:var(--gold-bright);line-height:1;letter-spacing:.5px}
+  .tier .tnote{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);font-weight:600;min-height:13px}
+
+  /* ---------- CABEZAS ---------- */
+  .twocol{display:grid;grid-template-columns:1fr 1.05fr;gap:16px;align-items:stretch}
+  .panel{border:1px solid var(--border);border-radius:var(--r);background:var(--surface);padding:24px 24px;box-shadow:inset 0 1px 0 rgba(201,162,75,.06)}
+  .panel .pl{font-size:11px;letter-spacing:2.5px;text-transform:uppercase;color:var(--gold);font-weight:600;margin-bottom:14px}
+  .qr-benefit .big{font-family:var(--serif);font-size:32px;font-weight:700;color:var(--gold-bright);letter-spacing:.5px}
+  .qr-benefit p{font-size:13.5px;color:var(--ink);line-height:1.6;margin-top:10px;max-width:34ch}
+  .qr-benefit .req{display:inline-block;margin-top:16px;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;
+    font-weight:600;color:var(--gold-bright);border:1px solid var(--gold-line);border-radius:50px;padding:8px 16px;background:var(--gold-dim)}
+  .comm{display:flex;flex-direction:column}
+  .crow{display:flex;align-items:center;justify-content:space-between;padding:14px 2px}
+  .crow + .crow{border-top:1px solid var(--border)}
+  .crow .cl{font-size:14px;color:var(--ink);font-weight:500}
+  .crow .cp{font-family:var(--serif);font-size:27px;font-weight:700;color:var(--gold-bright);letter-spacing:.5px}
+  .crow.box-comm{margin-top:6px;border-top:1px solid var(--gold-line);padding-top:16px}
+  .crow.box-comm .cl{color:var(--gold-bright);font-weight:600;text-transform:uppercase;letter-spacing:1.5px;font-size:13px}
+
+  /* ---------- PROMOTORES ---------- */
+  .ladder{display:flex;flex-direction:column;gap:10px}
+  .step{position:relative;border:1px solid var(--border);border-radius:11px;background:var(--panel);
+    display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 22px;overflow:hidden}
+  .step .bar{position:absolute;inset:0 auto 0 0;background:var(--gold-dim);z-index:0}
+  .step:last-child{border-color:var(--gold-line)}
+  .step .sl,.step .sr{position:relative;z-index:1}
+  .step .sl{font-family:var(--serif);font-size:21px;font-weight:600;color:var(--ink);letter-spacing:.3px}
+  .step .sr{font-family:var(--serif);font-size:20px;font-weight:700;color:var(--gold-bright);letter-spacing:.3px}
+  .step .sr em{font-style:normal;color:var(--muted);font-weight:500;font-size:13px;letter-spacing:1px;font-family:var(--body)}
+
+  /* ---------- FOOTER ---------- */
+  .rules{margin-top:48px;border-top:1px solid var(--border);padding-top:26px;text-align:center}
+  .rules .ages{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-bottom:18px}
+  .badge{font-size:12.5px;letter-spacing:2px;text-transform:uppercase;font-weight:600;color:var(--gold-bright);
+    border:1px solid var(--gold-line);border-radius:50px;padding:9px 18px;background:var(--gold-dim)}
+  .rules p{font-size:12.5px;color:var(--dim);line-height:1.7;max-width:62ch;margin:0 auto}
+  .foot{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:26px}
+  .foot .rombo-s{width:18px;height:22px;background-color:var(--gold);
+    -webkit-mask:url('../assets/rombo-crop.png') center/contain no-repeat;
+            mask:url('../assets/rombo-crop.png') center/contain no-repeat;}
+  .foot .h{font-family:var(--serif);font-size:16px;letter-spacing:3px;color:var(--gold);font-weight:600}
+
+  /* ---------- RESPONSIVE ---------- */
+  @media (max-width:760px){
+    .pad{padding:40px 22px 36px}
+    .frame{inset:11px}
+    .facts{grid-template-columns:repeat(2,1fr)}
+    .fact:nth-child(3){border-left:none}
+    .fact:nth-child(n+3){border-top:1px solid var(--border)}
+    .boxgrid{grid-template-columns:1fr}
+    .tiers{grid-template-columns:repeat(2,1fr)}
+    .tier:nth-child(3){border-left:none}
+    .tier:nth-child(n+3){border-top:1px solid var(--border)}
+    .twocol{grid-template-columns:1fr}
+    .sponsors .sp{padding:0 22px}
+  }
+</style>
+</head>
+<body>
+  <div class="stage">
+    <div class="frame"></div>
+    <div class="rombo-bg"></div>
+    <div class="pad">
+
+      <header class="hero">
+        <div class="wm"></div>
+        <div class="presenta">PRESENTA</div>
+        <h1 class="gala" aria-label="Gala IV"></h1>
+        <div class="aniv">Cuarto Aniversario</div>
+        <div class="sponsors">
+          <div class="sp"><b>PRESENTED BY</b><div class="logobox"><div class="logo boss"></div></div></div>
+          <div class="sp"><b>POWERED BY</b><div class="logobox"><div class="logo bacardi" role="img" aria-label="Bacardi"></div></div></div>
+        </div>
+      </header>
+
+      <div class="facts">
+        <div class="fact"><div class="k">Fecha</div><div class="v">Sáb 18.07.2026</div></div>
+        <div class="fact"><div class="k">Horario</div><div class="v">10PM a 5AM</div></div>
+        <div class="fact"><div class="k">Barra</div><div class="v">Libre Premium</div></div>
+        <div class="fact"><div class="k">Edades</div><div class="v">Muj +20 / Hom +22</div></div>
+      </div>
+
+      <div class="shead center"><h2>Boxes</h2></div>
+
+      <div class="deluxe">
+        <div class="dn">Box Deluxe Bacardi<small>Edición especial</small></div>
+        <div class="dtag">Información con promotores</div>
+      </div>
+
+      <div class="boxgrid">
+        <div class="box">
+          <div class="box-top"><div class="bn">Floor</div><div class="cap">15 personas</div></div>
+          <div class="prices">
+            <div class="pcell early"><div class="pt">Early Bird</div><div class="pv">S/5,100</div></div>
+            <div class="pcell"><div class="pt">Venta</div><div class="pv">S/5,300</div></div>
+          </div>
+          <div class="chips">
+            <span class="chip">15 invitaciones</span>
+            <span class="chip incl">Grey Goose</span>
+            <span class="chip incl">Bacardi Añejo</span>
+            <span class="chip incl">Botella premium</span>
+            <span class="chip incl">3 regulares</span>
+            <span class="chip">Insumos</span>
+            <span class="chip">Mozo a disposición</span>
+          </div>
+        </div>
+
+        <div class="box">
+          <div class="box-top"><div class="bn">Gala</div><div class="cap">15 personas</div></div>
+          <div class="prices">
+            <div class="pcell early"><div class="pt">Early Bird</div><div class="pv">S/4,300</div></div>
+            <div class="pcell"><div class="pt">Venta</div><div class="pv">S/4,600</div></div>
+          </div>
+          <div class="chips">
+            <span class="chip">15 invitaciones</span>
+            <span class="chip incl">Bacardi Añejo</span>
+            <span class="chip incl">Botella premium</span>
+            <span class="chip incl">3 regulares</span>
+            <span class="chip">Insumos</span>
+            <span class="chip">Mozo a disposición</span>
+          </div>
+        </div>
+
+        <div class="box">
+          <div class="box-top"><div class="bn">Bacardi</div><div class="cap">10 personas</div></div>
+          <div class="prices">
+            <div class="pcell early"><div class="pt">Early Bird</div><div class="pv">S/3,000</div></div>
+            <div class="pcell"><div class="pt">Venta</div><div class="pv">S/3,200</div></div>
+          </div>
+          <div class="chips">
+            <span class="chip">10 invitaciones</span>
+            <span class="chip incl">Bacardi Añejo</span>
+            <span class="chip incl">Botella premium</span>
+            <span class="chip incl">1 regular</span>
+            <span class="chip">Insumos</span>
+            <span class="chip">Mozo a disposición</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="shead center"><h2>Entradas Stand Up</h2></div>
+
+      <div class="tiers-wrap">
+        <div class="tiers">
+          <div class="tier"><div class="tn">F&amp;F</div><div class="tp">S/200</div><div class="tnote">Stock limitado</div></div>
+          <div class="tier"><div class="tn">Pre Venta</div><div class="tp">S/220</div><div class="tnote"></div></div>
+          <div class="tier"><div class="tn">Venta</div><div class="tp">S/260</div><div class="tnote"></div></div>
+          <div class="tier"><div class="tn">Lifesaver</div><div class="tp">S/300</div><div class="tnote"></div></div>
+        </div>
+      </div>
+
+      <div class="shead"><h2>Beneficios Cabezas</h2></div>
+
+      <div class="twocol">
+        <div class="panel qr-benefit">
+          <div class="pl">Acceso propio</div>
+          <div class="big">QR Cabeza +1</div>
+          <p>Entrada personal e intransferible para el cabeza más un acompañante.</p>
+          <span class="req">Se activa vendiendo mínimo 10 entradas</span>
+        </div>
+        <div class="panel">
+          <div class="pl">Comisiones</div>
+          <div class="comm">
+            <div class="crow"><div class="cl">Stand up · 10 a 70 tickets</div><div class="cp">6%</div></div>
+            <div class="crow"><div class="cl">Stand up · 71 a 130 tickets</div><div class="cp">7%</div></div>
+            <div class="crow"><div class="cl">Stand up · 131 a más tickets</div><div class="cp">9%</div></div>
+            <div class="crow box-comm"><div class="cl">Por box</div><div class="cp">5%</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="shead"><h2>Beneficios Promotores</h2></div>
+
+      <div class="ladder">
+        <div class="step"><div class="bar" style="width:20%"></div><div class="sl">10 entradas</div><div class="sr">1 free</div></div>
+        <div class="step"><div class="bar" style="width:55%"></div><div class="sl">30 entradas</div><div class="sr">3 free</div></div>
+        <div class="step"><div class="bar" style="width:72%"></div><div class="sl">40 entradas</div><div class="sr">4 free</div></div>
+        <div class="step"><div class="bar" style="width:100%"></div><div class="sl">50 entradas</div><div class="sr">5 free <em>+ 1 botella</em></div></div>
+      </div>
+
+      <div class="rules">
+        <div class="ages">
+          <span class="badge">Mujeres +20</span>
+          <span class="badge">Hombres +22</span>
+          <span class="badge">Stock limitado y reducido</span>
+        </div>
+        <p>Ingreso permitido únicamente a compradores aprobados que cumplan con la edad establecida. No se permite el ingreso a menores de edad ni a personas con documentación falsa. Precios e información con promotores autorizados.</p>
+        <div class="foot">
+          <span class="rombo-s"></span>
+          <span class="h">@connect.lima · #StayConnected</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</body>
+</html>

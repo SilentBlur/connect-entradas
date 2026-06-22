@@ -1,0 +1,23 @@
+# --- Basura de Windows / OneDrive ---
+desktop.ini
+Thumbs.db
+ehthumbs.db
+$RECYCLE.BIN/
+*.lnk
+
+# --- macOS (por si tu amigo usa Mac) ---
+.DS_Store
+.AppleDouble
+
+# --- Editores ---
+.vscode/
+.idea/
+*.swp
+*~
+
+# --- Python (servidor de preview) ---
+__pycache__/
+*.pyc
+
+# --- Logs ---
+*.log

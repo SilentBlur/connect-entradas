@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1080, initial-scale=1">
+<title>Gala IV - Precios</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+  :root{
+    --bg:#0A0A0A; --surface:#151412; --surface-2:#1C1A17; --panel:#0F0E0C;
+    --border:#2A271F;
+    --gold:#C9A24B; --gold-bright:#E7C97D;
+    --gold-dim:rgba(201,162,75,.12); --gold-line:rgba(201,162,75,.30);
+    --ink:#F4EFE6; --muted:#9A9384; --dim:#5E584C;
+    --serif:'Playfair Display',Georgia,serif; --body:'Inter',system-ui,sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{background:#070605}
+  .stage{
+    position:relative;width:1080px;height:1350px;overflow:hidden;
+    background:
+      radial-gradient(1050px 660px at 50% -6%, rgba(201,162,75,.14), transparent 60%),
+      var(--bg);
+    color:var(--ink);font-family:var(--body);
+    display:flex;flex-direction:column;align-items:center;
+    padding:64px 76px 54px;
+  }
+  .frame{position:absolute;inset:30px;border:1px solid var(--gold-line);pointer-events:none}
+  .rombo-bg{position:absolute;right:-120px;bottom:-120px;width:520px;height:520px;opacity:.05;pointer-events:none;
+    background-color:var(--gold);
+    -webkit-mask:url('../assets/rombo-crop.png') center/contain no-repeat;
+            mask:url('../assets/rombo-crop.png') center/contain no-repeat;}
+  .hd{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;gap:10px;margin-bottom:16px}
+  .wm{width:188px;height:36px;background-color:var(--ink);
+    -webkit-mask:url('../assets/connect-white-crop.png') center/contain no-repeat;
+            mask:url('../assets/connect-white-crop.png') center/contain no-repeat;}
+  .hd .gala{width:300px;aspect-ratio:7826/1431;margin-top:10px;background-color:var(--gold-bright);
+    -webkit-mask:url('../assets/gala-iv-logo.png') center/contain no-repeat;
+            mask:url('../assets/gala-iv-logo.png') center/contain no-repeat;}
+  .hd .meta{font-size:14px;letter-spacing:6px;color:var(--muted);font-weight:500;text-transform:uppercase}
+
+  .seclabel{position:relative;z-index:2;width:100%;display:flex;align-items:center;gap:18px;margin:17px 0 12px}
+  .seclabel span{font-family:var(--serif);font-size:22px;letter-spacing:3px;color:var(--ink);font-weight:600;white-space:nowrap}
+  .seclabel::before,.seclabel::after{content:'';height:1px;background:var(--gold-line);flex:1}
+
+  .rows{position:relative;z-index:2;width:100%;display:flex;flex-direction:column;gap:8px}
+  .row{display:flex;align-items:center;justify-content:space-between;gap:18px;
+    border:1px solid var(--border);border-radius:14px;padding:14px 22px;background:var(--panel);
+    box-shadow:inset 0 1px 0 rgba(201,162,75,.07)}
+  .row .nm{font-family:var(--serif);font-size:26px;font-weight:600;letter-spacing:.5px;color:var(--ink)}
+  .row .nm small{display:block;font-family:var(--body);font-size:12px;letter-spacing:2px;color:var(--muted);font-weight:500;margin-top:4px;text-transform:uppercase}
+  .row.boxrow{flex-direction:column;align-items:stretch;gap:12px}
+  .row.boxrow .rhead{display:flex;align-items:center;justify-content:space-between;gap:18px}
+  .incs{display:flex;flex-wrap:wrap;gap:7px}
+  .inc{font-size:12px;letter-spacing:.2px;color:var(--muted);font-weight:500;
+    background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:50px;padding:5px 12px}
+  .inc.b{color:var(--gold-bright);background:var(--gold-dim);border-color:rgba(201,162,75,.28)}
+  .prices{display:flex;gap:10px;align-items:stretch}
+  .cell{display:flex;flex-direction:column;align-items:center;gap:3px;border:1px solid var(--gold-line);border-radius:10px;padding:8px 16px;min-width:130px}
+  .cell.early{border-color:var(--gold-bright);background:linear-gradient(180deg,var(--gold-bright),var(--gold))}
+  .cell .ct{font-size:11px;letter-spacing:2.5px;color:var(--muted);font-weight:600}
+  .cell.early .ct{color:#3a2c0c}
+  .cell .cp{font-family:var(--serif);font-size:24px;font-weight:700;color:var(--gold-bright)}
+  .cell.early .cp{color:#160F03}
+  .single{font-family:var(--serif);font-size:32px;font-weight:700;color:var(--gold-bright);white-space:nowrap}
+  .promo{font-size:13px;letter-spacing:3px;color:var(--gold);font-weight:500;text-transform:uppercase;border:1px dashed var(--gold-line);border-radius:10px;padding:11px 18px}
+
+  .foot{position:relative;z-index:2;width:100%;margin-top:auto;padding-top:22px;display:flex;flex-direction:column;gap:11px;align-items:center}
+  .fbadges{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+  .fb{font-size:13px;letter-spacing:3px;color:var(--gold-bright);font-weight:500;text-transform:uppercase;border:1px solid var(--gold-line);border-radius:50px;padding:8px 18px;background:var(--gold-dim)}
+  .fnote{font-size:12.5px;letter-spacing:2.5px;color:var(--dim);font-weight:500;text-align:center}
+  .fhandle{font-family:var(--serif);font-size:16px;letter-spacing:3px;color:var(--gold);font-weight:600}
+</style>
+</head>
+<body>
+  <div class="stage">
+    <div class="frame"></div>
+    <div class="rombo-bg"></div>
+
+    <div class="hd">
+      <div class="wm"></div>
+      <div class="gala"></div>
+      <div class="meta">Lista de precios · 18.07.2026</div>
+    </div>
+
+    <div class="seclabel"><span>Boxes</span></div>
+    <div class="rows">
+      <div class="row">
+        <div class="nm">Box Deluxe Bacardi</div>
+        <div class="promo">Consultar con promotores</div>
+      </div>
+      <div class="row boxrow">
+        <div class="rhead">
+          <div class="nm">Box Floor<small>15 personas</small></div>
+          <div class="prices">
+            <div class="cell early"><div class="ct">EARLY BIRD</div><div class="cp">S/5,100</div></div>
+            <div class="cell"><div class="ct">VENTA</div><div class="cp">S/5,300</div></div>
+          </div>
+        </div>
+        <div class="incs">
+          <span class="inc b">Grey Goose</span>
+          <span class="inc b">Bacardi Añejo</span>
+          <span class="inc b">Botella premium</span>
+          <span class="inc b">3 regulares</span>
+          <span class="inc">Insumos</span>
+          <span class="inc">Mozo a disposición</span>
+        </div>
+      </div>
+      <div class="row boxrow">
+        <div class="rhead">
+          <div class="nm">Box Gala<small>15 personas</small></div>
+          <div class="prices">
+            <div class="cell early"><div class="ct">EARLY BIRD</div><div class="cp">S/4,300</div></div>
+            <div class="cell"><div class="ct">VENTA</div><div class="cp">S/4,600</div></div>
+          </div>
+        </div>
+        <div class="incs">
+          <span class="inc b">Bacardi Añejo</span>
+          <span class="inc b">Botella premium</span>
+          <span class="inc b">3 regulares</span>
+          <span class="inc">Insumos</span>
+          <span class="inc">Mozo a disposición</span>
+        </div>
+      </div>
+      <div class="row boxrow">
+        <div class="rhead">
+          <div class="nm">Box Bacardi<small>10 personas</small></div>
+          <div class="prices">
+            <div class="cell early"><div class="ct">EARLY BIRD</div><div class="cp">S/3,000</div></div>
+            <div class="cell"><div class="ct">VENTA</div><div class="cp">S/3,200</div></div>
+          </div>
+        </div>
+        <div class="incs">
+          <span class="inc b">Bacardi Añejo</span>
+          <span class="inc b">Botella premium</span>
+          <span class="inc b">1 regular</span>
+          <span class="inc">Insumos</span>
+          <span class="inc">Mozo a disposición</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="seclabel"><span>Stand Up</span></div>
+    <div class="rows">
+      <div class="row">
+        <div class="nm">F&amp;F<small>Stock limitado</small></div>
+        <div class="single">S/200</div>
+      </div>
+      <div class="row">
+        <div class="nm">Pre Venta</div>
+        <div class="single">S/220</div>
+      </div>
+      <div class="row">
+        <div class="nm">Venta</div>
+        <div class="single">S/260</div>
+      </div>
+      <div class="row">
+        <div class="nm">Lifesaver</div>
+        <div class="single">S/300</div>
+      </div>
+    </div>
+
+    <div class="foot">
+      <div class="fbadges">
+        <div class="fb">Mujeres +20 · Hombres +22</div>
+        <div class="fb">Barra libre premium · 10PM a 5AM</div>
+      </div>
+      <div class="fnote">INGRESO SOLO A COMPRADORES APROBADOS QUE CUMPLAN LA EDAD ESTABLECIDA</div>
+      <div class="fhandle">@connect.lima · #StayConnected</div>
+    </div>
+  </div>
+</body>
+</html>
