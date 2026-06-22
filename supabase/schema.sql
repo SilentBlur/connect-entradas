@@ -62,12 +62,15 @@ create table if not exists public.tickets (
   payment    text default 'paid',         -- paid | pending | courtesy | free
   price      numeric default 0,
   source     text default 'admin',
+  user_id    uuid,                        -- cliente (cuenta) que reclamó la entrada
   created_at bigint,
   claimed_at bigint,
   used_at    bigint
 );
+alter table public.tickets add column if not exists user_id uuid;
 create index if not exists tickets_event_idx on public.tickets(event_id);
 create index if not exists tickets_code_idx  on public.tickets(event_id, code);
+create index if not exists tickets_user_idx  on public.tickets(user_id);
 
 create table if not exists public.requests (
   id         text primary key,
@@ -98,10 +101,78 @@ create table if not exists public.settings (
 insert into public.settings (id) values (1) on conflict (id) do nothing;
 
 -- ============================================================
+-- 1.5) CUENTAS DE USUARIO (perfiles + roles)
+--   Todos (admins y clientes) viven en Supabase Auth.
+--   profiles.role distingue 'admin' (vos + Italo) de 'customer' (público).
+-- ============================================================
+
+create table if not exists public.profiles (
+  id         uuid primary key references auth.users(id) on delete cascade,
+  email      text,
+  name       text,
+  role       text default 'customer',     -- admin | customer
+  created_at timestamptz default now()
+);
+
+-- ¿El usuario actual es admin? (lista fija de mails + tabla profiles, a prueba de bloqueos)
+create or replace function public.is_admin()
+returns boolean language sql security definer stable set search_path = public as $$
+  select coalesce((auth.jwt() ->> 'email') in ('matiasgv_26@hotmail.com','ibindac@gmail.com'), false)
+      or exists (select 1 from public.profiles where id = auth.uid() and role = 'admin');
+$$;
+
+-- Al crearse un usuario nuevo en Auth, se crea su perfil (cliente por defecto)
+create or replace function public.handle_new_user()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  insert into public.profiles (id, email, name, role)
+  values (new.id, new.email, coalesce(new.raw_user_meta_data ->> 'name', ''), 'customer')
+  on conflict (id) do nothing;
+  return new;
+end;
+$$;
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created after insert on auth.users
+  for each row execute function public.handle_new_user();
+
+-- Backfill: crea perfiles para los usuarios que ya existían
+insert into public.profiles (id, email, name, role)
+select u.id, u.email, coalesce(u.raw_user_meta_data ->> 'name', ''), 'customer'
+from auth.users u
+on conflict (id) do nothing;
+
+-- Marca como admin a los dueños (por si la lista de mails cambiara)
+update public.profiles set role = 'admin'
+where email in ('matiasgv_26@hotmail.com','ibindac@gmail.com');
+
+-- Cambiar el propio nombre (el cliente, desde su configuración)
+drop function if exists public.update_my_name(text);
+create function public.update_my_name(p_name text)
+returns void language sql security definer set search_path = public as $$
+  update public.profiles set name = p_name where id = auth.uid();
+$$;
+
+-- Entradas del cliente logueado (para su hub), con datos del evento y tipo
+drop function if exists public.my_tickets();
+create function public.my_tickets()
+returns table(id text, code text, status text, payment text, type_name text, color text,
+              event_id text, event_name text, date_iso text, start_time text, venue text,
+              created_at bigint, used_at bigint)
+language sql security definer set search_path = public as $$
+  select t.id, t.code, t.status, t.payment, tt.name, tt.color,
+         e.id, e.name, e.date_iso, e.start_time, e.venue, t.created_at, t.used_at
+  from tickets t
+  join events e on e.id = t.event_id
+  left join ticket_types tt on tt.id = t.type_id
+  where t.user_id = auth.uid()
+  order by e.date_iso desc nulls last, t.created_at desc;
+$$;
+
+-- ============================================================
 -- 2) ROW LEVEL SECURITY
---    Admin (logueado) = acceso total.
---    Público (anon)   = solo leer info de eventos/tipos.
---    Reclamar / solicitar entradas = vía funciones seguras (abajo).
+--    Admin (is_admin) = acceso total a la gestión.
+--    Cliente (logueado) = solo SUS entradas y su perfil.
+--    Público (anon) = leer info de eventos/tipos + reclamar por funciones.
 -- ============================================================
 
 alter table public.events       enable row level security;
@@ -110,33 +181,38 @@ alter table public.cabezas      enable row level security;
 alter table public.tickets      enable row level security;
 alter table public.requests     enable row level security;
 alter table public.settings     enable row level security;
+alter table public.profiles     enable row level security;
 
--- ---- Admin: acceso total para usuarios autenticados ----
+-- ---- Admin: acceso total SOLO si is_admin() ----
 do $$
 declare t text;
 begin
   foreach t in array array['events','ticket_types','cabezas','tickets','requests','settings'] loop
     execute format('drop policy if exists admin_all on public.%I;', t);
-    execute format('create policy admin_all on public.%I for all to authenticated using (true) with check (true);', t);
+    execute format('create policy admin_all on public.%I for all to authenticated using (public.is_admin()) with check (public.is_admin());', t);
   end loop;
 end $$;
 
--- ---- Público: solo lectura de eventos y tipos (para la página de reclamo) ----
+-- ---- Público + clientes: lectura de eventos y tipos (cualquier rol) ----
 drop policy if exists public_read_events on public.events;
-create policy public_read_events on public.events
-  for select to anon using (true);
+create policy public_read_events on public.events for select using (true);
 
 drop policy if exists public_read_types on public.ticket_types;
-create policy public_read_types on public.ticket_types
-  for select to anon using (active is true);
+create policy public_read_types on public.ticket_types for select using (active is true);
 
--- (cabezas, tickets y requests NO tienen acceso directo para anon: se usan las funciones de abajo)
+-- ---- Cliente: puede ver SOLO sus propias entradas ----
+drop policy if exists tickets_owner_select on public.tickets;
+create policy tickets_owner_select on public.tickets for select to authenticated using (user_id = auth.uid());
+
+-- ---- Perfiles: cada uno ve/edita el suyo (admins ven todos) ----
+drop policy if exists profiles_self_select on public.profiles;
+create policy profiles_self_select on public.profiles for select to authenticated using (id = auth.uid() or public.is_admin());
+
+-- (cabezas, requests y el resto de tickets NO tienen acceso directo: se usan las funciones de abajo)
 
 -- ============================================================
 -- 3) FUNCIONES SEGURAS  (lo que usan las páginas públicas)
---    "security definer" = corren con permisos del dueño, así
---    el cliente NO puede leer toda la base, solo lo justo.
---    Se hace DROP + CREATE para poder cambiar las columnas que devuelven.
+--    "security definer" = corren con permisos del dueño.
 -- ============================================================
 
 -- Buscar una entrada por código (para reclamarla)
@@ -152,7 +228,7 @@ language sql security definer set search_path = public as $$
   limit 1;
 $$;
 
--- Reclamar la entrada (asigna los datos del titular y la valida)
+-- Reclamar la entrada (asigna titular, la valida y la liga a la cuenta del cliente)
 drop function if exists public.claim_ticket(text, text, text, text, text, text);
 create function public.claim_ticket(
   p_id text, p_name text, p_dni text, p_email text, p_phone text, p_cabeza_id text default null)
@@ -172,6 +248,7 @@ begin
                                        'email',coalesce(p_email,''),'phone',coalesce(p_phone,'')),
       status     = 'valid',
       cabeza_id  = coalesce(tickets.cabeza_id, p_cabeza_id),
+      user_id    = coalesce(auth.uid(), tickets.user_id),
       claimed_at = (extract(epoch from now())*1000)::bigint
     where tickets.id = p_id
     returning tickets.id, tickets.token, tickets.status;
@@ -214,7 +291,7 @@ language sql security definer set search_path = public as $$
   select id, name from cabezas where id = p_id limit 1;
 $$;
 
--- Entradas de un cabeza para su panel público (sus ventas, sin exponer toda la base)
+-- Entradas de un cabeza para su panel público
 drop function if exists public.panel_tickets(text, text);
 create function public.panel_tickets(p_event_id text, p_cabeza_id text)
 returns table(id text, code text, status text, payment text, price numeric,
@@ -227,13 +304,16 @@ language sql security definer set search_path = public as $$
   order by t.created_at desc;
 $$;
 
--- Permisos de ejecución para las páginas públicas
+-- Permisos de ejecución
 grant execute on function public.lookup_ticket(text,text)                                to anon, authenticated;
 grant execute on function public.claim_ticket(text,text,text,text,text,text)             to anon, authenticated;
 grant execute on function public.get_ticket(text)                                        to anon, authenticated;
 grant execute on function public.submit_request(text,text,text,text,text,text,text,text) to anon, authenticated;
 grant execute on function public.get_cabeza(text)                                        to anon, authenticated;
 grant execute on function public.panel_tickets(text,text)                                to anon, authenticated;
+grant execute on function public.update_my_name(text)                                    to authenticated;
+grant execute on function public.my_tickets()                                            to authenticated;
+grant execute on function public.is_admin()                                              to anon, authenticated;
 
 -- ============================================================
 -- 4) REALTIME  (para que Matías e Italo vean los cambios en vivo)
@@ -247,4 +327,4 @@ begin
   end;
 end $$;
 
--- ✅ Listo. Tu base está creada y segura.
+-- ✅ Listo. Base con cuentas, roles y seguridad por usuario.
