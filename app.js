@@ -70,7 +70,7 @@ let state = null;
 const DB = {
   s(){ return state.settings; },
   load(){ try{ const r=localStorage.getItem(KEY); if(r){ state=JSON.parse(r); return true; } }catch(e){} return false; },
-  save(){ try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){ toast('Almacenamiento lleno','err'); } },
+  save(){ try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){} if(typeof cloudSaveQueued==='function') cloudSaveQueued(); },
   event(id){ return state.events.find(e=>e.id===id); },
   cabeza(id){ return state.cabezas.find(c=>c.id===id); },
   type(ev,id){ return ev?.types.find(t=>t.id===id); },
@@ -209,7 +209,7 @@ function mountShell(){
         ${NAV.map(n=>`<div class="nav-item" data-route="${n.r}" onclick="go('${n.r}')">${ic(n.icon)}<span>${n.label}</span>${n.r==='requests'&&reqCount?`<span class="nav-badge alert">${reqCount}</span>`:''}</div>`).join('')}
       </nav>
       <div class="sidebar-foot">
-        <div class="row"><div class="brand-rombo" style="width:26px;height:26px"></div><div class="grow"><div class="uname">${esc(state.settings.org)}</div><div class="urole">Administrador</div></div></div>
+        <div class="row"><div class="brand-rombo" style="width:26px;height:26px"></div><div class="grow" style="min-width:0"><div class="uname">${esc(state.settings.org)}</div><div class="urole" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(ADMIN_EMAIL||'Administrador')}</div></div><button class="btn-icon btn-xs btn-ghost" title="Cerrar sesión" onclick="logout()">${ic('back')}</button></div>
       </div>
     </aside>
     <div class="main">
@@ -252,6 +252,9 @@ function render(){
   if(route==='canje'){ return renderClaim(a, '', {canje:true, code:b||''}); }
   if(route==='panel'){ return renderCabezaPanel(a, b); }
   if(route==='t'){ return renderPublicTicket(a); }
+
+  // Rutas de admin: requieren sesión + datos cargados
+  if(!state){ return renderLogin(); }
 
   if(!$('.layout')) mountShell();
   // estado activo nav
@@ -1129,10 +1132,17 @@ function confirmModal(title,msg,onYes){ modal({title,size:'narrow',body:`<p clas
    PÚBLICO: Claim (reclamar/solicitar entrada)
    ============================================================ */
 let claimState = { view:'home', typeId:null, eid:null, cid:'' };
-function renderClaim(eid, cid, opts){
+async function renderClaim(eid, cid, opts){
   opts=opts||{};
   stopScanner();
-  const e=DB.event(eid);
+  if(!state) state = { events:[], cabezas:[], tickets:[], requests:[], settings:Object.assign({}, DEFAULT_SETTINGS) };
+  let e=DB.event(eid);
+  if(!e){
+    $('#app').className='app-shell';
+    $('#app').innerHTML=publicWrap(`<div class="public-pad"><div class="empty"><div class="brand-rombo rombo" style="width:46px;height:46px;margin:0 auto 14px"></div><h3>Cargando…</h3></div></div>`);
+    try{ e=await cloudGetEventPublic(eid); }catch(err){ console.error(err); }
+    if(e && !DB.event(eid)) state.events.push(e);
+  }
   $('#app').className='app-shell';
   if(!e){ $('#app').innerHTML=publicWrap(`<div class="public-pad"><div class="empty"><div class="brand-rombo rombo" style="width:46px;height:46px;margin:0 auto 14px"></div><h3>Evento no encontrado</h3><p>El link no es válido o el evento fue eliminado.</p></div></div>`); return; }
   const cb=cid?DB.cabeza(cid):null;
@@ -1191,36 +1201,46 @@ function renderClaimBody(){
     ${claimState.canje?'':`<div class="evp-or">o</div><button class="btn btn-ghost btn-block" onclick="setClaimView('request')">${ic('ticket')} No tengo código — Solicitar entrada</button>`}`;
 }
 function currentTypePaid(){ const e=DB.event(claimState.eid); return DB.type(e,claimState.typeId)?.access==='paid'; }
-function submitRequest(){
-  const name=$('#cl-name').value.trim(); if(!name) return toast('Ingresa tu nombre','err');
+async function submitRequest(){
+  const name=($('#cl-name').value||'').trim(); if(!name) return toast('Ingresa tu nombre','err');
   const ev=DB.event(claimState.eid); const ty=DB.type(ev,claimState.typeId);
   if(!ty||ty.active===false) return toast('Este ticket no está disponible','err');
-  if(typeRemaining(ev,ty)<1) return toast('Este ticket está agotado','err');
-  const r={ id:'rq_'+uid(), eventId:claimState.eid, cabezaId:claimState.cid||null, typeId:claimState.typeId,
-    name, dni:$('#cl-dni').value.trim(), email:$('#cl-email').value.trim(), phone:$('#cl-phone').value.trim(), note:'', status:'pending', createdAt:Date.now() };
-  state.requests.push(r); DB.save();
+  try{
+    await cloudSubmitRequest({ eventId:claimState.eid, cabezaId:claimState.cid||null, typeId:claimState.typeId,
+      name, dni:($('#cl-dni').value||'').trim(), email:($('#cl-email').value||'').trim(), phone:($('#cl-phone').value||'').trim(), note:'' });
+  }catch(err){ console.error(err); return toast('No se pudo enviar la solicitud','err'); }
   $('#claim-body').innerHTML=`<div class="evp-success"><div class="big">${ic('check')}</div><h3>¡Solicitud enviada!</h3><p>Recibirás tu entrada con QR cuando ${claimState.cid?'tu cabeza':'el organizador'} apruebe tu solicitud${currentTypePaid()?' y confirme tu pago':''}.</p></div>`;
   toast('Solicitud enviada','ok');
 }
-function redeemCode(){
-  const code=$('#cl-code').value.trim().toUpperCase(); if(!code) return;
-  const t=state.tickets.find(x=>x.code===code && x.eventId===claimState.eid);
+async function redeemCode(){
+  const code=($('#cl-code').value||'').trim().toUpperCase(); if(!code) return;
+  let t; try{ t=await cloudLookupTicket(claimState.eid, code); }
+  catch(err){ console.error(err); return toast('Error de conexión','err'); }
   if(!t) return toast('Código no encontrado para este evento','err');
   if(t.status==='void') return toast('Este código fue anulado','err');
   if(t.status==='used') return toast('Esta entrada ya ingresó al evento','err');
-  if(t.status==='valid' && t.holder.name) { showClaimedTicket(t); return; }
-  // pedir datos
+  if(t.status==='valid'){
+    $('#claim-body').innerHTML=`<div class="evp-success"><div class="badge badge-green mb16"><span class="dot"></span>Esta entrada ya fue reclamada</div><p class="muted" style="font-size:13.5px;text-align:center">Si es tuya, abrila para ver tu QR.</p><button class="btn btn-primary btn-block" style="margin-top:14px" onclick="window.open('#/t/${t.id}','_blank')">${ic('eye')} Ver mi entrada</button></div>`;
+    return;
+  }
+  claimState.pending={ id:t.id, typeId:t.type_id, code:t.code||code };
   $('#claim-body').innerHTML=`<div class="badge badge-green mb16"><span class="dot"></span>Código válido</div>
     <div class="field-row"><div class="field"><label class="label">Nombre y apellido</label><input id="rc-name"></div><div class="field"><label class="label">DNI</label><input id="rc-dni"></div></div>
     <div class="field-row"><div class="field"><label class="label">Email</label><input id="rc-email" type="email"></div><div class="field"><label class="label">Celular</label><input id="rc-phone"></div></div>
-    <button class="btn btn-primary btn-block" onclick="confirmRedeem('${t.id}')">${ic('check')} Reclamar mi entrada</button>`;
+    <button class="btn btn-primary btn-block" onclick="confirmRedeem()">${ic('check')} Reclamar mi entrada</button>`;
 }
-function confirmRedeem(id){
-  const t=state.tickets.find(x=>x.id===id); if(!t) return;
-  const name=$('#rc-name').value.trim(); if(!name) return toast('Ingresa tu nombre','err');
-  t.holder={name, dni:$('#rc-dni').value.trim(), email:$('#rc-email').value.trim(), phone:$('#rc-phone').value.trim()};
-  if(claimState.cid && !t.cabezaId) t.cabezaId=claimState.cid;
-  t.status='valid'; t.claimedAt=Date.now(); t.source='link'; DB.save();
+async function confirmRedeem(){
+  const p=claimState.pending; if(!p) return;
+  const name=($('#rc-name').value||'').trim(); if(!name) return toast('Ingresa tu nombre','err');
+  const holder={ name, dni:($('#rc-dni').value||'').trim(), email:($('#rc-email').value||'').trim(), phone:($('#rc-phone').value||'').trim() };
+  let res;
+  try{ res=await cloudClaimTicket(p.id, holder, claimState.cid||null); }
+  catch(err){ console.error(err); const m=String(err.message||err);
+    if(/used/.test(m)) return toast('Esta entrada ya ingresó','err');
+    if(/void/.test(m)) return toast('Este código fue anulado','err');
+    if(/already/.test(m)) return toast('Esta entrada ya fue reclamada','err');
+    return toast('No se pudo reclamar','err'); }
+  const t={ id:res.id, token:res.token, code:p.code, eventId:claimState.eid, typeId:p.typeId, cabezaId:claimState.cid||null, holder, status:'valid' };
   showClaimedTicket(t);
   toast('¡Entrada reclamada!','ok');
 }
@@ -1229,10 +1249,16 @@ function showClaimedTicket(t){
 }
 
 /* PÚBLICO: ver una entrada (link directo) */
-function renderPublicTicket(id){
-  const t=state.tickets.find(x=>x.id===id);
+async function renderPublicTicket(id){
+  stopScanner();
+  if(!state) state = { events:[], cabezas:[], tickets:[], requests:[], settings:Object.assign({}, DEFAULT_SETTINGS) };
   $('#app').className='app-shell';
-  if(!t){ $('#app').innerHTML=publicWrap(`<div class="public-pad"><div class="empty"><div class="brand-rombo rombo"></div><h3>Entrada no encontrada</h3></div></div>`); return; }
+  $('#app').innerHTML=publicWrap(`<div class="public-pad"><div class="empty"><div class="brand-rombo rombo"></div><h3>Cargando…</h3></div></div>`);
+  let r; try{ r=await cloudGetTicket(id); }catch(err){ console.error(err); }
+  if(!r){ $('#app').innerHTML=publicWrap(`<div class="public-pad"><div class="empty"><div class="brand-rombo rombo"></div><h3>Entrada no encontrada</h3></div></div>`); return; }
+  if(!DB.event(r.event_id)){ try{ const e=await cloudGetEventPublic(r.event_id); if(e) state.events.push(e); }catch(err){} }
+  const t={ id:r.id, token:r.token, code:r.code, eventId:r.event_id, typeId:r.type_id, cabezaId:null,
+    holder:r.holder||{name:'',dni:'',email:'',phone:''}, status:r.status };
   $('#app').innerHTML=publicWrap(`<div class="public-pad"><div class="txt-c mb16"><div class="badge ${t.status==='used'?'badge-blue':t.status==='void'?'badge-red':'badge-green'}"><span class="dot"></span>${t.status==='used'?'Ya ingresó':t.status==='void'?'Anulada':'Entrada válida'}</div></div>${ticketCardHTML(t)}<div class="row gap8 mt16 no-print"><button class="btn btn-primary grow" onclick="window.print()">${ic('download')} Guardar / Imprimir</button></div></div>`);
 }
 
@@ -1258,13 +1284,71 @@ function migrate(){
   });
   if(ch) DB.save();
 }
-function boot(){
-  if(!DB.load()) seed();
-  // normaliza settings nuevos
-  if(!state.settings.symbol) state.settings.symbol = state.settings.currency==='USD'?'$':'S/';
-  migrate();
+const PUBLIC_ROUTES = ['e','claim','canje','panel','t'];
+async function boot(){
   window.addEventListener('hashchange', render);
-  render();
+  const route = (location.hash.replace(/^#\/?/, '') || 'dashboard').split('/')[0];
+
+  // Rutas públicas: no requieren login
+  if(PUBLIC_ROUTES.includes(route)){
+    let session=null; try{ session = await cloudSession(); }catch(e){}
+    if(session){ await loadAdmin(); return; }   // admin viendo una página pública
+    if(!state) state = { events:[], cabezas:[], tickets:[], requests:[], settings:Object.assign({}, DEFAULT_SETTINGS) };
+    render();
+    return;
+  }
+
+  // Rutas de admin: requieren sesión
+  let session=null;
+  try{ session = await cloudSession(); }catch(e){ console.error(e); }
+  if(!session){ renderLogin(); return; }
+  await loadAdmin();
 }
+let ADMIN_EMAIL='';
+async function loadAdmin(){
+  try{ await cloudLoadAll(); }
+  catch(e){ console.error(e); toast('No se pudieron cargar los datos','err'); renderLogin(); return; }
+  try{ const s=await cloudSession(); ADMIN_EMAIL=(s&&s.user&&s.user.email)||''; }catch(e){}
+  if(!state.settings.symbol) state.settings.symbol = state.settings.currency==='USD'?'$':'S/';
+  render();
+  subscribeRealtime();
+}
+
+/* ---------- Login admin ---------- */
+function renderLogin(){
+  stopScanner();
+  state = null;
+  $('#app').className='app-shell';
+  $('#app').innerHTML = `
+  <div class="login-wrap">
+    <form class="login-card" onsubmit="event.preventDefault();doLogin()">
+      <div class="brand-wordmark login-wm"></div>
+      <h2>Panel de administración</h2>
+      <p class="login-sub">Ingresá con tu cuenta para gestionar eventos y entradas.</p>
+      <label class="label">Email</label>
+      <input id="lg-email" type="email" autocomplete="username" placeholder="tu@correo.com">
+      <label class="label" style="margin-top:12px">Contraseña</label>
+      <input id="lg-pass" type="password" autocomplete="current-password" placeholder="••••••••">
+      <button class="btn btn-primary btn-block" id="lg-btn" type="submit" style="margin-top:18px">Ingresar</button>
+      <div id="lg-err" class="login-err"></div>
+    </form>
+    <div class="login-foot">Connect · Entradas</div>
+  </div>`;
+  setTimeout(()=>{ const el=$('#lg-email'); if(el) el.focus(); }, 60);
+}
+async function doLogin(){
+  const email=($('#lg-email').value||'').trim(); const pass=$('#lg-pass').value||'';
+  const err=$('#lg-err'); err.textContent='';
+  if(!email||!pass){ err.textContent='Completá email y contraseña.'; return; }
+  const btn=$('#lg-btn'); btn.disabled=true; btn.textContent='Ingresando…';
+  try{
+    const { error } = await cloudSignIn(email, pass);
+    if(error){ err.textContent='Email o contraseña incorrectos.'; btn.disabled=false; btn.textContent='Ingresar'; return; }
+    if(!location.hash || PUBLIC_ROUTES.includes((location.hash.replace(/^#\/?/,'')||'').split('/')[0])) location.hash='#/dashboard';
+    await loadAdmin();
+  }catch(e){ err.textContent='Error de conexión. Probá de nuevo.'; btn.disabled=false; btn.textContent='Ingresar'; }
+}
+async function logout(){ try{ await cloudSignOut(); }catch(e){} state=null; location.hash=''; renderLogin(); }
+
 document.addEventListener('DOMContentLoaded', boot);
 if(document.readyState!=='loading') boot();

@@ -6,7 +6,7 @@
 --   2. Menú izquierdo → "SQL Editor" → "New query"
 --   3. Pegá TODO este archivo y apretá "Run".
 --
--- Es seguro correrlo varias veces (usa IF NOT EXISTS / CREATE OR REPLACE).
+-- Es seguro correrlo varias veces (idempotente).
 -- ============================================================
 
 -- ============================================================
@@ -136,13 +136,15 @@ create policy public_read_types on public.ticket_types
 -- 3) FUNCIONES SEGURAS  (lo que usan las páginas públicas)
 --    "security definer" = corren con permisos del dueño, así
 --    el cliente NO puede leer toda la base, solo lo justo.
+--    Se hace DROP + CREATE para poder cambiar las columnas que devuelven.
 -- ============================================================
 
 -- Buscar una entrada por código (para reclamarla)
-create or replace function public.lookup_ticket(p_event_id text, p_code text)
-returns table(id text, status text, type_name text, event_name text)
+drop function if exists public.lookup_ticket(text, text);
+create function public.lookup_ticket(p_event_id text, p_code text)
+returns table(id text, status text, type_id text, type_name text, event_name text, code text)
 language sql security definer set search_path = public as $$
-  select t.id, t.status, tt.name, e.name
+  select t.id, t.status, t.type_id, tt.name, e.name, t.code
   from tickets t
   join events e on e.id = t.event_id
   left join ticket_types tt on tt.id = t.type_id
@@ -151,7 +153,8 @@ language sql security definer set search_path = public as $$
 $$;
 
 -- Reclamar la entrada (asigna los datos del titular y la valida)
-create or replace function public.claim_ticket(
+drop function if exists public.claim_ticket(text, text, text, text, text, text);
+create function public.claim_ticket(
   p_id text, p_name text, p_dni text, p_email text, p_phone text, p_cabeza_id text default null)
 returns table(id text, token text, status text)
 language plpgsql security definer set search_path = public as $$
@@ -176,20 +179,19 @@ end;
 $$;
 
 -- Ver una entrada pública (incluye token para dibujar el QR)
-create or replace function public.get_ticket(p_id text)
-returns table(id text, token text, status text, holder jsonb,
-              type_name text, event_name text, date_iso text, venue text)
+drop function if exists public.get_ticket(text);
+create function public.get_ticket(p_id text)
+returns table(id text, token text, status text, holder jsonb, code text, event_id text, type_id text)
 language sql security definer set search_path = public as $$
-  select t.id, t.token, t.status, t.holder, tt.name, e.name, e.date_iso, e.venue
+  select t.id, t.token, t.status, t.holder, t.code, t.event_id, t.type_id
   from tickets t
-  join events e on e.id = t.event_id
-  left join ticket_types tt on tt.id = t.type_id
   where t.id = p_id
   limit 1;
 $$;
 
 -- Enviar una solicitud desde el link de un cabeza (sin login)
-create or replace function public.submit_request(
+drop function if exists public.submit_request(text, text, text, text, text, text, text, text);
+create function public.submit_request(
   p_event_id text, p_cabeza_id text, p_type_id text,
   p_name text, p_dni text, p_email text, p_phone text, p_note text)
 returns text
@@ -205,9 +207,9 @@ end;
 $$;
 
 -- Permisos de ejecución para las páginas públicas
-grant execute on function public.lookup_ticket(text,text)                              to anon, authenticated;
-grant execute on function public.claim_ticket(text,text,text,text,text,text)           to anon, authenticated;
-grant execute on function public.get_ticket(text)                                      to anon, authenticated;
+grant execute on function public.lookup_ticket(text,text)                                to anon, authenticated;
+grant execute on function public.claim_ticket(text,text,text,text,text,text)             to anon, authenticated;
+grant execute on function public.get_ticket(text)                                        to anon, authenticated;
 grant execute on function public.submit_request(text,text,text,text,text,text,text,text) to anon, authenticated;
 
 -- ============================================================
