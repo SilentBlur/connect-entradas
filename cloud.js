@@ -153,6 +153,14 @@ async function cloudSubmitRequest(p){
     p_type_id:p.typeId||null, p_name:p.name||'', p_dni:p.dni||'', p_email:p.email||'', p_phone:p.phone||'', p_note:p.note||'' });
   if(error) throw error; return data;
 }
+async function cloudGetCabeza(id){
+  const { data, error } = await sb.rpc('get_cabeza', { p_id:id });
+  if(error) throw error; return data && data[0];
+}
+async function cloudPanelTickets(eid, cid){
+  const { data, error } = await sb.rpc('panel_tickets', { p_event_id:eid, p_cabeza_id:cid });
+  if(error) throw error; return data || [];
+}
 
 /* ---------- Realtime (se activa más adelante) ---------- */
 let _rtTimer = null;

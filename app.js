@@ -790,9 +790,27 @@ function waPanelLink(cid,eid){ const c=DB.cabeza(cid); const e=DB.event(eid); if
    ============================================================ */
 const panelUI={q:'',f:'all'};
 function panelUrl(eid,cid){ const base=(state.settings.baseUrl||location.href.split('#')[0]); return `${base}#/panel/${eid}/${cid}`; }
-function renderCabezaPanel(eid,cid){
+async function renderCabezaPanel(eid,cid){
   stopScanner();
   $('#app').className='app-shell';
+  if(!state) state = { events:[], cabezas:[], tickets:[], requests:[], settings:Object.assign({}, DEFAULT_SETTINGS) };
+  // Modo público (sin sesión): traer los datos del cabeza por funciones seguras
+  if(!DB.event(eid) || !DB.cabeza(cid)){
+    $('#app').innerHTML=publicWrap(`<div class="public-pad"><div class="empty"><div class="brand-rombo rombo" style="width:46px;height:46px;margin:0 auto 14px"></div><h3>Cargando…</h3></div></div>`);
+    try{
+      const [ev, cb2, rows] = await Promise.all([ cloudGetEventPublic(eid), cloudGetCabeza(cid), cloudPanelTickets(eid,cid) ]);
+      if(ev && !DB.event(eid)) state.events.push(ev);
+      if(cb2 && !DB.cabeza(cid)) state.cabezas.push({ id:cb2.id, name:cb2.name, prefix:'', phone:'', email:'', createdAt:0 });
+      const ev2=DB.event(eid);
+      if(ev2){
+        const tm=new Map((ev2.types||[]).map(t=>[t.id,t]));
+        (rows||[]).forEach(r=>{ if(r.type_id && !tm.has(r.type_id)){ const tt={id:r.type_id,name:r.type_name||'?',color:r.color||'#fff',kind:'general',access:'paid',price:0,capacity:0,includes:[],desc:'',active:true}; tm.set(r.type_id,tt); ev2.types.push(tt); } });
+      }
+      state.tickets = (rows||[]).map(r=>({ id:r.id, code:r.code, token:null, eventId:eid, typeId:r.type_id, cabezaId:cid,
+        holder:r.holder||{name:'',dni:'',email:'',phone:''}, status:r.status, payment:r.payment, price:Number(r.price)||0,
+        source:'admin', createdAt:r.created_at||0, claimedAt:null, usedAt:null }));
+    }catch(err){ console.error(err); }
+  }
   const e=DB.event(eid); const cb=DB.cabeza(cid);
   if(!e||!cb){ $('#app').innerHTML=publicWrap(`<div class="public-pad"><div class="empty"><div class="brand-rombo rombo" style="width:46px;height:46px;margin:0 auto 14px"></div><h3>Página no encontrada</h3><p>El link no es válido o el perfil fue eliminado.</p></div></div>`); return; }
   panelUI.q=''; panelUI.f='all';

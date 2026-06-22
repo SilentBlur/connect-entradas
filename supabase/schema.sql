@@ -206,11 +206,34 @@ begin
 end;
 $$;
 
+-- Nombre de un cabeza (para el encabezado de su panel público)
+drop function if exists public.get_cabeza(text);
+create function public.get_cabeza(p_id text)
+returns table(id text, name text)
+language sql security definer set search_path = public as $$
+  select id, name from cabezas where id = p_id limit 1;
+$$;
+
+-- Entradas de un cabeza para su panel público (sus ventas, sin exponer toda la base)
+drop function if exists public.panel_tickets(text, text);
+create function public.panel_tickets(p_event_id text, p_cabeza_id text)
+returns table(id text, code text, status text, payment text, price numeric,
+              type_id text, type_name text, color text, holder jsonb, created_at bigint)
+language sql security definer set search_path = public as $$
+  select t.id, t.code, t.status, t.payment, t.price, t.type_id, tt.name, tt.color, t.holder, t.created_at
+  from tickets t
+  left join ticket_types tt on tt.id = t.type_id
+  where t.event_id = p_event_id and t.cabeza_id = p_cabeza_id and t.status <> 'void'
+  order by t.created_at desc;
+$$;
+
 -- Permisos de ejecución para las páginas públicas
 grant execute on function public.lookup_ticket(text,text)                                to anon, authenticated;
 grant execute on function public.claim_ticket(text,text,text,text,text,text)             to anon, authenticated;
 grant execute on function public.get_ticket(text)                                        to anon, authenticated;
 grant execute on function public.submit_request(text,text,text,text,text,text,text,text) to anon, authenticated;
+grant execute on function public.get_cabeza(text)                                        to anon, authenticated;
+grant execute on function public.panel_tickets(text,text)                                to anon, authenticated;
 
 -- ============================================================
 -- 4) REALTIME  (para que Matías e Italo vean los cambios en vivo)

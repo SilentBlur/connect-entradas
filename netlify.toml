@@ -1,0 +1,13 @@
+# Connect · Entradas — configuración de Netlify
+# Sitio 100% estático (vanilla JS), sin paso de build.
+# Se publica la raíz del repositorio tal cual.
+
+[build]
+  publish = "."
+
+# Cabeceras de seguridad básicas
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
