@@ -516,3 +516,77 @@ td .sub{font-size:12px;color:var(--text-dim)}
 .login-card input:focus{outline:none;border-color:var(--gold-bright)}
 .login-err{color:#E5736B;font-size:13px;text-align:center;margin-top:12px;min-height:16px}
 .login-foot{color:var(--text-dim);font-size:11.5px;letter-spacing:1px}
+
+/* ============================================================
+   EXPERIENCIA DEL CLIENTE (home, auth, hub) — mobile first
+   ============================================================ */
+.txt-c{text-align:center}
+.sm{font-size:12px}
+.btn-lg{padding:13px 22px;font-size:15px;border-radius:12px}
+
+.cust{min-height:100vh;display:flex;flex-direction:column;background:var(--bg)}
+.cust-top{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--border-soft);position:sticky;top:0;background:rgba(10,10,10,.82);backdrop-filter:blur(10px);z-index:5}
+.cust-wm{height:22px;width:120px;display:block}
+.cust-nav{display:flex;align-items:center;gap:6px}
+.cust-link{color:var(--text-muted);font-size:13.5px;font-weight:600;text-decoration:none;padding:8px 12px;border-radius:9px;border:1px solid transparent;background:none;cursor:pointer;font-family:inherit}
+.cust-link:hover{color:var(--text);background:var(--surface)}
+.cust-link.on{color:var(--gold-bright)}
+.cust-main{flex:1;width:100%;max-width:880px;margin:0 auto;padding:24px 18px 60px}
+.cust-foot{text-align:center;color:var(--text-dim);font-size:11.5px;padding:22px 18px;border-top:1px solid var(--border-soft)}
+
+/* Home / hero */
+.hero{text-align:center;padding:40px 0 30px}
+.hero-rombo{width:50px;height:50px;margin:0 auto 22px;opacity:.92}
+.hero h1{font-family:var(--serif);font-size:34px;line-height:1.1;font-weight:700;letter-spacing:-.5px}
+.hero-sub{color:var(--text-muted);font-size:16px;line-height:1.55;max-width:520px;margin:14px auto 26px}
+.hero-cta{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.about{padding:30px 0 10px;border-top:1px solid var(--border-soft);margin-top:20px}
+.about h2{font-family:var(--serif);font-size:23px;font-weight:700;text-align:center}
+.about-lead{color:var(--text-muted);font-size:15px;line-height:1.6;text-align:center;max-width:600px;margin:12px auto 28px}
+.about-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.about-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px 18px;text-align:center}
+.about-card .ac-ic{width:42px;height:42px;border-radius:11px;background:var(--surface-3);display:flex;align-items:center;justify-content:center;margin:0 auto 14px}
+.about-card .ac-ic svg{width:21px;height:21px;color:var(--gold-bright)}
+.about-card h3{font-size:15px;font-weight:700;margin-bottom:6px}
+.about-card p{color:var(--text-muted);font-size:13px;line-height:1.5}
+
+/* Auth (login / registro) */
+.auth-wrap{display:flex;justify-content:center;padding:18px 0}
+.auth-card{width:100%;max-width:400px;background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:30px 26px}
+.auth-wm{height:24px;width:140px;margin:0 auto 20px;display:block}
+.auth-card h2{font-family:var(--serif);font-size:20px;font-weight:700}
+.auth-tabs{display:flex;gap:6px;background:var(--surface-2);border:1px solid var(--border);border-radius:11px;padding:4px;margin-bottom:18px}
+.auth-tabs.sm{margin:0 0 14px}
+.auth-tabs button{flex:1;padding:9px;border:none;background:none;color:var(--text-muted);font-weight:600;font-size:13px;border-radius:8px;cursor:pointer;font-family:inherit}
+.auth-tabs button.on{background:var(--gold-bright);color:#0A0A0A}
+.auth-card input{width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:11px 13px;color:var(--text);font-size:14px;box-sizing:border-box}
+.auth-card input:focus{outline:none;border-color:var(--gold-bright)}
+.auth-forgot{display:block;margin:14px auto 0;background:none;border:none;color:var(--text-muted);font-size:12.5px;cursor:pointer;text-decoration:underline;font-family:inherit}
+.big-ok{width:52px;height:52px;border-radius:50%;background:var(--success-dim);color:var(--success);display:flex;align-items:center;justify-content:center;margin:0 auto 14px}
+.big-ok svg{width:26px;height:26px}
+
+/* Hub del cliente */
+.hub{max-width:680px;margin:0 auto}
+.hub-title{font-family:var(--serif);font-size:26px;font-weight:700;margin-bottom:16px}
+.hub-tabs{display:flex;gap:4px;background:var(--surface-2);border:1px solid var(--border);border-radius:11px;padding:4px;margin-bottom:20px}
+.hub-tabs button{flex:1;padding:10px 6px;border:none;background:none;color:var(--text-muted);font-weight:600;font-size:13px;border-radius:8px;cursor:pointer;font-family:inherit}
+.hub-tabs button.on{background:var(--gold-bright);color:#0A0A0A}
+.hub-tickets{display:flex;flex-direction:column;gap:12px}
+.hub-tk{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px}
+.hub-tk-main{flex:1;min-width:0}
+.hub-tk-ev{font-family:var(--serif);font-size:17px;font-weight:700;margin-bottom:3px}
+.hub-tk-meta{color:var(--text-muted);font-size:12.5px;margin-bottom:8px}
+.hub-tk-type{font-size:13px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.hub-profile{display:flex;flex-direction:column;gap:0}
+.hp-block{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px;margin-bottom:14px}
+.hp-block input{width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:11px 13px;color:var(--text);font-size:14px;box-sizing:border-box}
+.hp-block input:focus{outline:none;border-color:var(--gold-bright)}
+.hp-block .field{margin-bottom:12px}
+
+@media(max-width:640px){
+  .hero h1{font-size:27px}
+  .hero-sub{font-size:15px}
+  .hero-cta .btn{width:100%}
+  .about-grid{grid-template-columns:1fr}
+  .cust-main{padding:18px 14px 50px}
+}

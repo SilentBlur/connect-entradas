@@ -162,6 +162,24 @@ async function cloudPanelTickets(eid, cid){
   if(error) throw error; return data || [];
 }
 
+/* ---------- Cuentas de clientes ---------- */
+async function cloudSignUp(email, password, name){
+  return await sb.auth.signUp({ email, password, options:{ data:{ name } } });
+}
+async function cloudIsAdmin(){ try{ const { data } = await sb.rpc('is_admin'); return data === true; }catch(e){ return false; } }
+async function cloudCurrentUser(){ const { data } = await sb.auth.getUser(); return data && data.user; }
+async function cloudMyProfile(){
+  const u = await cloudCurrentUser(); if(!u) return null;
+  let name='';
+  try{ const { data } = await sb.from('profiles').select('name').eq('id', u.id).maybeSingle(); name=(data&&data.name)||''; }catch(e){}
+  return { id:u.id, email:u.email, name };
+}
+async function cloudMyTickets(){ const { data, error } = await sb.rpc('my_tickets'); if(error) throw error; return data || []; }
+async function cloudUpdateName(name){ const { error } = await sb.rpc('update_my_name', { p_name:name }); if(error) throw error; }
+async function cloudUpdateEmail(email){ return await sb.auth.updateUser({ email }); }
+async function cloudUpdatePassword(password){ return await sb.auth.updateUser({ password }); }
+async function cloudResetPassword(email){ return await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname + '#/cuenta' }); }
+
 /* ---------- Realtime (se activa más adelante) ---------- */
 let _rtTimer = null;
 function subscribeRealtime(){
