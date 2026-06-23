@@ -1,0 +1,347 @@
+/* ============================================================
+   CONNECT · ENTRADAS — client.css
+   Capa visual SOLO para las pantallas que ve el cliente:
+     · Reclamar entrada   (#/e/…)
+     · Canje              (#/canje/…)
+     · Entrada / ticket   (#/t/…)
+   Se carga DESPUÉS de styles.css y solo refina/anima esas vistas.
+   No toca el panel de administración. Todo va scopeado bajo
+   .evp (página del evento) o .public (vistas de ticket).
+   ============================================================ */
+
+/* Curvas de easing con "punch" (filosofía Emil Kowalski).
+   Se definen sobre las raíces del cliente y heredan a sus hijos. */
+.evp, .public{
+  --cx-out: cubic-bezier(0.23, 1, 0.32, 1);     /* entradas: arranca rápido, se siente responsivo */
+  --cx-soft: cubic-bezier(0.4, 0, 0.2, 1);       /* transiciones suaves de hover/color */
+
+  /* Acento ORO elegante — único color de la paleta. Cambiá solo estos valores
+     para recalibrar todo el sitio del cliente de una sola vez. */
+  --cx-accent:      #CFA64F;                       /* oro refinado (menos amarillo) para textos/aros */
+  --cx-accent-2:    #9E7329;                       /* oro profundo (base de los degradados) */
+  --cx-accent-hi:   #F2DC97;                       /* champán: el brillo metálico arriba */
+  --cx-accent-ink:  #231803;                       /* texto oscuro sobre el botón dorado */
+  --cx-accent-soft: rgba(207,166,79,.16);          /* rellenos/anillos suaves */
+  --cx-accent-glow: rgba(207,166,79,.24);          /* resplandor */
+}
+
+/* ---------- Keyframes (prefijo cx- para no chocar con styles.css) ---------- */
+@keyframes cx-rise      { from{ opacity:0; transform:translateY(14px) }            to{ opacity:1; transform:none } }
+@keyframes cx-rise-media{ from{ opacity:0; transform:translateY(16px) scale(.985) } to{ opacity:1; transform:none } }
+@keyframes cx-pop       { from{ opacity:0; transform:scale(.965) }                 to{ opacity:1; transform:none } }
+@keyframes cx-fade      { from{ opacity:0 }                                         to{ opacity:1 } }
+/* Entrada con leve "overshoot" para el check de éxito */
+@keyframes cx-pop-in    { 0%{ opacity:0; transform:scale(.82) } 62%{ opacity:1; transform:scale(1.05) } 100%{ transform:scale(1) } }
+@keyframes cx-breathe   { 0%,100%{ opacity:.5 } 50%{ opacity:.16 } }
+@keyframes cx-shake     { 0%,100%{ transform:translateX(0) } 20%{ transform:translateX(-4px) } 40%{ transform:translateX(4px) } 60%{ transform:translateX(-3px) } 80%{ transform:translateX(2px) } }
+
+/* ============================================================
+   FONDO AMBIENTAL — deja de ser negro plano y gana profundidad.
+   Capa fija detrás del contenido del cliente (no toca el admin).
+   ============================================================ */
+.evp, .public{ position: relative; z-index: 0; }
+.evp::before, .public::before{
+  content:''; position: fixed; inset:0; z-index:-1; pointer-events:none;
+  background:
+    radial-gradient(110% 72% at 50% -10%, rgba(255,255,255,.10), transparent 58%),
+    radial-gradient(75% 48% at 88% 112%, rgba(255,255,255,.05), transparent 60%),
+    linear-gradient(180deg, #1f1f1f 0%, #161616 44%, #101010 100%);
+}
+/* Pequeña elevación para que las superficies no se fundan con el fondo */
+.evp-meta .mi .ico{ background: rgba(255,255,255,.05); border-color: rgba(255,255,255,.10); }
+.evp-cabeza{ background: rgba(255,255,255,.045); border-color: rgba(255,255,255,.12); }
+
+/* ============================================================
+   ACENTO ÁMBAR — único color, repartido en pocos puntos clave.
+   ============================================================ */
+/* Glow cálido arriba (reemplaza el blanco neutro por ámbar muy tenue) */
+.evp::before, .public::before{
+  background:
+    radial-gradient(110% 72% at 50% -10%, rgba(207,166,79,.10), transparent 56%),
+    radial-gradient(75% 48% at 88% 112%, rgba(255,255,255,.045), transparent 60%),
+    linear-gradient(180deg, #1f1f1f 0%, #161616 44%, #101010 100%);
+}
+
+/* Chip de fecha del flyer */
+.evp-media .chip .d{ color: var(--cx-accent); }
+/* Resplandor cálido sutil bajo el flyer (el color "sale" del evento) */
+.evp-media{ box-shadow: 0 26px 60px -34px var(--cx-accent-glow); }
+
+/* Entrada seleccionada + precios en ámbar */
+.tt-option.sel{ border-color: var(--cx-accent); box-shadow: 0 0 0 3px var(--cx-accent-soft); }
+.tt-option.sel .tt-radio{ border-color: var(--cx-accent); }
+.tt-option.sel .tt-radio::after{ background: var(--cx-accent); }
+.tt-option .tt-price{ color: var(--cx-accent); }
+
+/* Acción principal dorada y consistente en todo el flujo del cliente
+   (Solicitar entrada / Reclamar mi entrada). El admin queda intacto. */
+.evp .btn-primary, .public .btn-primary{
+  background:
+    linear-gradient(115deg, transparent 38%, rgba(255,255,255,.28) 50%, transparent 62%),
+    linear-gradient(177deg, var(--cx-accent-hi) 0%, #E0BD62 32%, var(--cx-accent) 60%, var(--cx-accent-2) 100%);
+  color: var(--cx-accent-ink);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.45);
+}
+
+/* Foco de inputs en ámbar (en vez de blanco) */
+.evp input:focus, .public input:focus{
+  border-color: var(--cx-accent) !important;
+  box-shadow: 0 0 0 3px var(--cx-accent-soft) !important;
+}
+.code-card input:focus{ border-color: var(--cx-accent); box-shadow: 0 0 0 3px var(--cx-accent-soft); }
+
+/* Ticket VIP: filo cálido + código dorado */
+.evp .ticket, .public .ticket{ border-color: rgba(207,166,79,.24); }
+.evp .ticket-code .c, .public .ticket-code .c{ color: var(--cx-accent); }
+
+/* ============================================================
+   CUENTA REGRESIVA (la inyecta client.js bajo los datos del evento)
+   ============================================================ */
+.cx-countdown{ margin: 4px 0 22px; animation: cx-rise .5s var(--cx-out) .26s both; }
+.cx-cd-label{
+  font-size: 10.5px; text-transform: uppercase; letter-spacing: 1.6px;
+  color: var(--text-dim); margin-bottom: 9px;
+}
+.cx-cd-grid{ display: flex; gap: 8px; }
+.cx-cd-cell{
+  flex: 1; text-align: center; padding: 12px 6px; border-radius: 13px;
+  background: linear-gradient(180deg, rgba(255,255,255,.055), rgba(255,255,255,.015));
+  border: 1px solid rgba(207,166,79,.22);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
+}
+.cx-cd-num{
+  font-family: var(--serif); font-size: 25px; font-weight: 700; line-height: 1;
+  color: var(--cx-accent); font-variant-numeric: tabular-nums;
+}
+.cx-cd-unit{
+  font-size: 9.5px; text-transform: uppercase; letter-spacing: .9px;
+  color: var(--text-muted); margin-top: 7px;
+}
+.cx-cd-live{ color: var(--cx-accent); font-weight: 600; font-size: 14px; }
+
+/* ============================================================
+   TIPOGRAFÍA COMPACTA — letras un poco más chicas = más elegante.
+   Solo en las vistas del cliente; el admin no se toca.
+   ============================================================ */
+.evp-info > h1            { font-size: 31px; letter-spacing: -.7px; }
+.evp-meta .mi .v          { font-size: 13.5px; }
+.evp-meta .mi .l          { font-size: 10px; }
+.evp-desc                 { font-size: 13px; }
+.evp-cabeza               { font-size: 12.5px; }
+.evp-media .chip .d       { font-size: 21px; }
+
+.code-card h3             { font-size: 17.5px; }
+.code-card p              { font-size: 12px; }
+.code-card input          { font-size: 17.5px; }
+.code-card .btn-claim     { font-size: 13px; }
+
+.tt-option .tt-name       { font-size: 13.5px; }
+.tt-option .tt-desc       { font-size: 11.5px; }
+.tt-option .tt-price      { font-size: 16px; }
+
+.evp .label, .public .label             { font-size: 10.5px; }
+.evp .field input, .public .field input { font-size: 13.5px; }
+.evp .btn, .public .btn                  { font-size: 12.5px; }
+
+.cx-cd-num                { font-size: 22px; }
+.evp-success h3           { font-size: 20px; }
+.evp-success p            { font-size: 13px; }
+
+/* ticket (carnet) — solo en cliente */
+.evp .ticket-top .ev, .public .ticket-top .ev     { font-size: 16.5px; }
+.evp .ticket-top .meta, .public .ticket-top .meta { font-size: 11.5px; }
+.evp .ticket-info .it .v, .public .ticket-info .it .v { font-size: 12.5px; }
+.evp .ticket-code .c, .public .ticket-code .c     { font-size: 14px; }
+
+/* El título se achica también en móvil (anula el 28px de styles.css) */
+@media (max-width: 860px){
+  .evp-info > h1{ font-size: 25px; }
+}
+
+/* ============================================================
+   PÁGINA DEL EVENTO (#/e, #/canje) — reveal escalonado
+   ============================================================ */
+.evp-media        { animation: cx-rise-media .55s var(--cx-out) both; }
+.evp-info > h1    { animation: cx-rise .5s var(--cx-out) .06s both; }
+.evp-meta .mi     { animation: cx-rise .5s var(--cx-out) both; }
+.evp-meta .mi:nth-child(1){ animation-delay:.12s }
+.evp-meta .mi:nth-child(2){ animation-delay:.18s }
+.evp-meta .mi:nth-child(3){ animation-delay:.24s }
+.evp-desc         { animation: cx-rise .5s var(--cx-out) .28s both; }
+.evp-cabeza       { animation: cx-rise .5s var(--cx-out) .32s both; }
+#claim-body       { animation: cx-rise .5s var(--cx-out) .34s both; }
+.evp-foot         { animation: cx-fade .8s ease .5s both; }
+
+/* La portada respira muy sutil al pasar el mouse (solo desktop) */
+.evp-media img{ transition: transform .6s var(--cx-out); will-change: transform; }
+
+/* ============================================================
+   TARJETA DE CÓDIGO (Reclama / Canjea) — vidrio oscuro esmerilado
+   Integrada al tema dark; un solo botón blanco de alto contraste.
+   ============================================================ */
+.code-card{
+  background:
+    linear-gradient(180deg, rgba(40,40,43,.92) 0%, rgba(19,19,21,.94) 100%);
+  border: 1px solid rgba(255,255,255,.12);
+  color: var(--text);
+  -webkit-backdrop-filter: blur(16px) saturate(1.25);
+  backdrop-filter: blur(16px) saturate(1.25);
+  box-shadow:
+    0 28px 64px -26px rgba(0,0,0,.85),
+    inset 0 1px 0 rgba(255,255,255,.10);
+  position: relative;
+  overflow: hidden;
+  animation: cx-pop .5s var(--cx-out) both;
+}
+/* Filo de luz superior (refracción tipo "liquid glass") */
+.code-card::before{
+  content:''; position:absolute; top:0; left:0; right:0; height:1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.4), transparent);
+  pointer-events:none;
+}
+.code-card .cc-h .r{ background: var(--cx-accent); }   /* rombo ámbar en la cabecera */
+.code-card h3{ color: var(--text); }
+.code-card p{ color: var(--text-muted); }
+.code-card input{
+  background: rgba(255,255,255,.05);
+  border: 1.5px solid rgba(255,255,255,.16);
+  color: var(--text);
+  transition: border-color .16s var(--cx-soft), box-shadow .16s var(--cx-soft);
+}
+.code-card input::placeholder{ color: var(--text-dim); }
+.code-card input:focus{
+  border-color: rgba(255,255,255,.65);
+  box-shadow: 0 0 0 3px rgba(255,255,255,.10);
+}
+/* Botón principal (Reclamar / Canjear): oro pulido con destello sutil */
+.code-card .btn-claim{
+  background:
+    linear-gradient(115deg, transparent 38%, rgba(255,255,255,.28) 50%, transparent 62%),
+    linear-gradient(177deg, var(--cx-accent-hi) 0%, #E0BD62 32%, var(--cx-accent) 60%, var(--cx-accent-2) 100%);
+  color: var(--cx-accent-ink);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.5), 0 8px 22px -12px var(--cx-accent-glow);
+  transition: filter .18s var(--cx-soft), transform .14s var(--cx-out);
+}
+.code-card .btn-claim svg{ color: var(--cx-accent-ink); }
+.code-card .btn-claim:hover{ filter: brightness(1.05); }
+.code-card .btn-claim:active{ transform: scale(.96); }
+
+.evp-or{ animation: cx-fade .6s ease .4s both; }
+
+/* ============================================================
+   SELECCIÓN DE ENTRADAS (formulario "Solicitar") — stagger + tacto
+   ============================================================ */
+.tt-option{
+  transition:
+    border-color .18s var(--cx-soft),
+    box-shadow   .18s var(--cx-soft),
+    transform    .16s var(--cx-out);
+  animation: cx-rise .42s var(--cx-out) both;
+}
+.tt-option:nth-child(1){ animation-delay:.02s }
+.tt-option:nth-child(2){ animation-delay:.07s }
+.tt-option:nth-child(3){ animation-delay:.12s }
+.tt-option:nth-child(4){ animation-delay:.17s }
+.tt-option:nth-child(5){ animation-delay:.22s }
+.tt-option:nth-child(6){ animation-delay:.27s }
+.tt-option:not(.disabled):active{ transform: scale(.985); }
+
+/* ============================================================
+   FEEDBACK TÁCTIL en botones (scopeado al cliente, no toca admin)
+   ============================================================ */
+.evp .btn-primary, .public .btn-primary,
+.evp .btn-secondary, .public .btn-secondary,
+.evp .btn-ghost, .public .btn-ghost{
+  transition: transform .14s var(--cx-out), background .18s var(--cx-soft), border-color .18s var(--cx-soft);
+}
+.evp .btn-primary:active, .public .btn-primary:active,
+.evp .btn-secondary:active, .public .btn-secondary:active,
+.evp .btn-ghost:active, .public .btn-ghost:active{ transform: scale(.98); }
+
+/* Foco visible accesible (teclado) */
+.code-card .btn-claim:focus-visible,
+.tt-option:focus-visible,
+.evp .btn-primary:focus-visible, .public .btn-primary:focus-visible{
+  outline: 2px solid var(--cx-accent);
+  outline-offset: 2px;
+}
+
+/* ============================================================
+   VALIDACIÓN DEL FORMULARIO (errores en línea)
+   Los pinta client.js; acá viven los estilos.
+   ============================================================ */
+.evp .field.cx-bad input,
+.public .field.cx-bad input{
+  border-color: var(--error) !important;
+  box-shadow: 0 0 0 3px var(--error-dim) !important;
+  animation: cx-shake .32s var(--cx-soft) both;
+}
+.cx-err{
+  display:flex; align-items:center; gap:6px;
+  color: var(--error); font-size:11.5px; font-weight:600;
+  margin-top:6px; line-height:1.3;
+  animation: cx-rise .25s var(--cx-out) both;
+}
+.cx-err svg{ flex-shrink:0; }
+
+/* ============================================================
+   ÉXITO + TICKET FINAL (QR)
+   ============================================================ */
+.evp-success .big{ animation: cx-pop-in .55s var(--cx-out) both; }
+.evp-success h3 { animation: cx-rise .45s var(--cx-out) .1s both; }
+.evp-success p  { animation: cx-rise .45s var(--cx-out) .16s both; }
+
+/* Ticket VIP — solo en las vistas del cliente (.evp / .public).
+   El modal del admin conserva su estilo original. */
+.evp .ticket, .public .ticket{
+  background:
+    radial-gradient(130% 90% at 50% 0%, rgba(255,255,255,.07), transparent 58%),
+    linear-gradient(160deg, #202020 0%, #0b0b0b 100%);
+  border: 1px solid rgba(255,255,255,.18);
+  box-shadow:
+    0 38px 84px -32px rgba(0,0,0,.88),
+    inset 0 1px 0 rgba(255,255,255,.09);
+  animation: cx-pop .5s var(--cx-out) both;
+}
+/* Barrido de luz una sola vez, como "entrada recién emitida" */
+.evp .ticket::after, .public .ticket::after{
+  content:''; position:absolute; inset:0; pointer-events:none;
+  background: linear-gradient(115deg, transparent 32%, rgba(255,255,255,.12) 48%, transparent 62%);
+  transform: translateX(-130%);
+  animation: cx-sheen 1.1s var(--cx-out) .35s both;
+}
+@keyframes cx-sheen{ to{ transform: translateX(130%) } }
+.evp .ticket-top .ev, .public .ticket-top .ev{ letter-spacing:.3px; }
+.evp .ticket-top, .public .ticket-top{ border-bottom-color: rgba(255,255,255,.12); }
+.evp .ticket-code .c, .public .ticket-code .c{ letter-spacing:4px; }
+
+/* Estado "Cargando…" — el rombo respira en vez de quedarse muerto */
+.public .empty .rombo,
+.evp .empty .rombo{ animation: cx-breathe 1.4s ease-in-out infinite; }
+
+/* ============================================================
+   HOVER (solo en dispositivos con mouse real)
+   ============================================================ */
+@media (hover: hover) and (pointer: fine){
+  .evp-media:hover img{ transform: scale(1.035); }
+  .tt-option:not(.disabled):hover{ transform: translateY(-1px); }
+  .code-card .btn-claim:hover{ transform: translateY(-1px); }
+}
+
+/* ============================================================
+   ACCESIBILIDAD — respeta a quien prefiere menos movimiento.
+   Se mantiene un fade suave; se elimina todo el desplazamiento.
+   ============================================================ */
+@media (prefers-reduced-motion: reduce){
+  .evp-media, .evp-info > h1, .evp-meta .mi, .evp-desc, .evp-cabeza,
+  #claim-body, .code-card, .tt-option, .ticket, .cx-countdown,
+  .evp-success .big, .evp-success h3, .evp-success p{
+    animation: cx-fade .3s ease both !important;
+  }
+  .evp-media:hover img,
+  .tt-option:not(.disabled):hover,
+  .code-card .btn-claim:hover{ transform: none !important; }
+  .public .empty .rombo, .evp .empty .rombo{ animation: none !important; opacity:.3 }
+  .evp .ticket::after, .public .ticket::after{ animation: none !important; opacity:0 }
+  .evp .field.cx-bad input, .public .field.cx-bad input{ animation: none !important; }
+}
