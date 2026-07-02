@@ -1283,7 +1283,7 @@ async function doClaimLogin(){
   if(!email||!pass){ if(err) err.textContent='Completá email y contraseña.'; return; }
   const btn=$('#ca-btn'); btn.disabled=true; btn.textContent='Entrando…';
   const { error }=await cloudSignIn(email,pass);
-  if(error){ if(err) err.textContent='Email o contraseña incorrectos.'; btn.disabled=false; btn.textContent='Iniciar sesión y continuar'; return; }
+  if(error){ if(err) err.textContent=isUnconfirmed(error)?'Tu cuenta no está confirmada todavía. Revisá tu correo.':'Email o contraseña incorrectos.'; btn.disabled=false; btn.textContent='Iniciar sesión y continuar'; return; }
   renderClaimForm();
 }
 async function doClaimRegister(){
@@ -1457,6 +1457,7 @@ async function renderAuthPage(mode){
   setTimeout(()=>{ const el=$('#au-email'); if(el) el.focus(); }, 60);
 }
 function switchAuth(m){ AUTH_MODE=m; custShell(authCardHTML(), false, 'auth'); setTimeout(()=>{const e=$('#au-'+(m==='register'?'name':'email'));if(e)e.focus();},40); }
+function isUnconfirmed(error){ const m=(error&&(error.code||error.message)||'')+''; return /email.?not.?confirmed|not.?confirmed|confirm/i.test(m); }
 async function doLogin(){
   const email=($('#au-email').value||'').trim(), pass=$('#au-pass').value||'';
   const err=$('#au-err'); err.textContent='';
@@ -1464,7 +1465,7 @@ async function doLogin(){
   const btn=$('#au-btn'); btn.disabled=true; btn.textContent='Entrando…';
   try{
     const { error } = await cloudSignIn(email, pass);
-    if(error){ err.textContent='Email o contraseña incorrectos.'; btn.disabled=false; btn.textContent='Entrar'; return; }
+    if(error){ err.textContent=isUnconfirmed(error)?'Tu cuenta todavía no está confirmada. Revisá tu correo, o escribinos para activarla.':'Email o contraseña incorrectos.'; btn.disabled=false; btn.textContent='Entrar'; return; }
     const admin = await cloudIsAdmin();
     location.hash = admin ? '#/dashboard' : '#/cuenta';
     render();
