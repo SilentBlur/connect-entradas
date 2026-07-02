@@ -180,6 +180,12 @@ async function cloudUpdateEmail(email){ return await sb.auth.updateUser({ email 
 async function cloudUpdatePassword(password){ return await sb.auth.updateUser({ password }); }
 async function cloudResetPassword(email){ return await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname + '#/cuenta' }); }
 
+/* Envía la entrada por correo (Edge Function 'send-ticket'). Silencioso si aún no está desplegada. */
+async function cloudSendTicket(ticketId){
+  try{ const { error } = await sb.functions.invoke('send-ticket', { body:{ ticket_id:ticketId } }); if(error) console.warn('send-ticket', error); }
+  catch(e){ console.warn('send-ticket', e); }
+}
+
 /* ---------- Realtime (se activa más adelante) ---------- */
 let _rtTimer = null;
 function subscribeRealtime(){

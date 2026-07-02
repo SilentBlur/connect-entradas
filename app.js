@@ -1319,6 +1319,7 @@ async function confirmRedeem(){
     return toast('No se pudo reclamar','err'); }
   const t={ id:res.id, token:res.token, code:p.code, eventId:claimState.eid, typeId:p.typeId, cabezaId:claimState.cid||null, holder, status:'valid' };
   showClaimedTicket(t);
+  cloudSendTicket(res.id);           // envía la entrada por correo (silencioso si aún no está desplegada)
   toast('¡Entrada reclamada!','ok');
 }
 function showClaimedTicket(t){
