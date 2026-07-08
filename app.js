@@ -1422,6 +1422,7 @@ async function confirmRedeem(){
   catch(err){ console.error(err); const m=String(err.message||err);
     if(/used/.test(m)) return toast('Esta entrada ya ingresó','err');
     if(/void/.test(m)) return toast('Este código fue anulado','err');
+    if(/already_has_ticket/.test(m)) return toast('Ya tenés tu entrada para este evento. Cada persona reclama una sola.','err');
     if(/already/.test(m)) return toast('Esta entrada ya fue reclamada','err');
     return toast('No se pudo reclamar','err'); }
   const t={ id:res.id, token:res.token, code:p.code, eventId:claimState.eid, typeId:p.typeId, cabezaId:claimState.cid||null, holder, status:'valid' };
@@ -1523,8 +1524,9 @@ async function renderCustomerHome(){
   custShell(`
     <section class="hero">
       <div class="brand-rombo hero-rombo"></div>
-      <h1>Tus entradas, en un solo lugar</h1>
-      <p class="hero-sub">Reclamá tu código, guardá tu QR y llevá el control de los eventos de <b>Connect</b> desde tu celular.</p>
+      <div class="hero-eyebrow">Cada noche una historia</div>
+      <h1>Tu entrada, en un solo lugar</h1>
+      <p class="hero-sub">Reclamá tu código, guardá tu QR y viví los eventos de <b>Connect</b> desde tu celular.</p>
       <div class="hero-cta">${cta}</div>
     </section>
     <section class="about">
@@ -1545,6 +1547,7 @@ function authCardHTML(){
   const isReg = AUTH_MODE==='register';
   return `<div class="auth-wrap"><div class="auth-card">
     <div class="brand-wordmark auth-wm"></div>
+    <div class="auth-tagline">Cada noche una historia</div>
     <div class="auth-tabs">
       <button class="${!isReg?'on':''}" onclick="switchAuth('login')">Iniciar sesión</button>
       <button class="${isReg?'on':''}" onclick="switchAuth('register')">Crear cuenta</button>

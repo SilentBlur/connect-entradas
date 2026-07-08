@@ -234,13 +234,23 @@ create function public.claim_ticket(
   p_id text, p_name text, p_dni text, p_email text, p_phone text, p_cabeza_id text default null)
 returns table(id text, token text, status text)
 language plpgsql security definer set search_path = public as $$
-declare v_status text;
+declare v_status text; v_event text; v_uid uuid;
 begin
-  select t.status into v_status from tickets t where t.id = p_id for update;
+  v_uid := auth.uid();
+  select t.status, t.event_id into v_status, v_event from tickets t where t.id = p_id for update;
   if v_status is null then raise exception 'not_found'; end if;
   if v_status = 'void' then raise exception 'void'; end if;
   if v_status = 'used' then raise exception 'used'; end if;
   if v_status <> 'unclaimed' then raise exception 'already_claimed'; end if;
+
+  -- UNA entrada por cuenta y por evento: cada persona reclama la SUYA, no la de otro.
+  if v_uid is not null and exists (
+    select 1 from tickets t2
+    where t2.user_id = v_uid and t2.event_id = v_event
+      and t2.status in ('valid','used') and t2.id <> p_id
+  ) then
+    raise exception 'already_has_ticket';
+  end if;
 
   return query
     update tickets set

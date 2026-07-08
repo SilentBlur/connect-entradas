@@ -590,3 +590,42 @@ td .sub{font-size:12px;color:var(--text-dim)}
   .about-grid{grid-template-columns:1fr}
   .cust-main{padding:18px 14px 50px}
 }
+
+/* ============================================================
+   CLIENTE · look premium OSCURO + DORADO (combina con connect-lima.com)
+   Truco: redefinir el acento (--gold*) SOLO dentro de .cust.
+   Así home / login / cuenta se vuelven dorados y el ADMIN sigue B&N.
+   ============================================================ */
+.cust{
+  --gold:#C9A24B;
+  --gold-bright:#E7C97D;
+  --gold-dim:rgba(201,162,75,.13);
+  --gold-line:rgba(201,162,75,.32);
+}
+/* Titulares editoriales serif (como la landing) */
+.cust .hero h1,.cust .about h2,.cust .hub-title,.cust .auth-card h2,
+.cust .hero-eyebrow,.cust .auth-tagline,.cust .hub-tk-ev{
+  font-family:'Playfair Display',var(--serif),serif;
+}
+/* Hero */
+.cust .hero{padding:58px 0 34px;position:relative}
+.cust .hero::after{content:'';position:absolute;top:6px;left:50%;transform:translateX(-50%);width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,rgba(201,162,75,.15),transparent 70%);z-index:0;pointer-events:none}
+.cust .hero>*{position:relative;z-index:1}
+.cust .hero-rombo{background:var(--gold-bright);-webkit-mask:url('assets/rombo-crop.png') center/contain no-repeat;mask:url('assets/rombo-crop.png') center/contain no-repeat;opacity:1}
+.cust .hero-eyebrow{font-style:italic;font-size:19px;color:var(--gold-bright);margin-bottom:10px;letter-spacing:.2px}
+.cust .hero h1{font-size:40px;font-weight:700;letter-spacing:-.4px;color:#F4EFE6}
+/* Botón primario dorado con glow cálido (el gradiente ya sale del --gold override) */
+.cust .btn-primary{box-shadow:0 8px 26px rgba(201,162,75,.20)}
+/* Tarjetas "Acerca de" */
+.cust .about h2{color:#F4EFE6}
+.cust .about-card{background:linear-gradient(180deg,var(--surface),#100e0b);border-radius:16px;transition:border-color .15s,transform .15s}
+.cust .about-card:hover{border-color:var(--gold-line);transform:translateY(-2px)}
+.cust .about-card .ac-ic{background:var(--gold-dim);border:1px solid var(--gold-line)}
+/* Tarjeta de login/registro premium */
+.cust .auth-card{background:linear-gradient(180deg,var(--surface),#0d0c0a);border-color:var(--gold-line);box-shadow:0 24px 60px rgba(0,0,0,.5),inset 0 1px 0 rgba(231,201,125,.07)}
+.cust .auth-tagline{font-style:italic;color:var(--gold-bright);text-align:center;font-size:15px;margin:6px 0 20px}
+@media(max-width:640px){
+  .cust .hero{padding:40px 0 26px}
+  .cust .hero h1{font-size:29px}
+  .cust .hero-eyebrow{font-size:17px}
+}
