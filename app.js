@@ -359,7 +359,7 @@ function viewDashboard(v){
   <div class="grid grid-4 mb24">
     ${kpis.map(k=>`<div class="kpi"><div class="k-ico">${ic(k.ic)}</div><div class="k-val">${k.val}</div><div class="k-label">${k.label}</div></div>`).join('')}
   </div>
-  <div class="grid" style="grid-template-columns:1.6fr 1fr">
+  <div class="grid cols-main">
     <div class="card">
       <div class="card-head"><div class="section-title">Próximos eventos</div><button class="btn btn-ghost btn-sm" onclick="go('events')">Ver todos</button></div>
       ${evs.length? evs.map(e=>{const st=DB.stats(e.id);const sd=shortDate(e.dateISO);return `
@@ -434,7 +434,7 @@ function viewEventForm(v, id){
   $('#crumb').textContent = 'Eventos';
   v.innerHTML = `
   <div class="row mb24"><button class="btn btn-ghost btn-sm" onclick="go('events')">${ic('back')} Volver</button></div>
-  <div class="grid" style="grid-template-columns:1fr 1fr;align-items:start">
+  <div class="grid cols-2" style="align-items:start">
     <div class="card">
       <div class="section-title mb16">Información del evento</div>
       <div class="field"><label class="label">Nombre del evento</label><input id="f-name" placeholder="Ej. Gala 4" value="${esc(e?.name||'')}"></div>
@@ -573,7 +573,7 @@ function renderEvTab(e, st){
       <div class="kpi"><div class="k-ico">${ic('money')}</div><div class="k-val">${money(st.revenue)}</div><div class="k-label">Recaudado</div></div>
       <div class="kpi"><div class="k-ico">${ic('star')}</div><div class="k-val">${st.courtesy}</div><div class="k-label">Cortesías / Free</div></div>
     </div>
-    <div class="grid" style="grid-template-columns:1fr 1fr">
+    <div class="grid cols-2">
       <div class="card"><div class="section-title mb16">Entradas por tipo</div>${typeBars(e)}</div>
       <div class="card"><div class="section-title mb16">Links públicos</div>
         <label class="label">Página del evento</label>
@@ -829,7 +829,7 @@ function viewCabezaDetail(v,id){
     <div class="kpi"><div class="k-ico">${ic('money')}</div><div class="k-val">${money(rev)}</div><div class="k-label">Vendido</div></div>
     <div class="kpi"><div class="k-ico">${ic('star')}</div><div class="k-val">${c.prefix}</div><div class="k-label">Prefijo</div></div>
   </div>
-  <div class="grid mb24" style="grid-template-columns:1fr 1fr;align-items:start">
+  <div class="grid cols-2 mb24" style="align-items:start">
     <div class="card"><div class="section-title mb8">Link de venta ${e?'· '+esc(e.name):''}</div><p class="muted mb16" style="font-size:13px">Para sus compradores: eligen su entrada, ingresan sus datos y la venta queda atribuida a ${esc(c.name)}.</p>${e?linkBox(claimUrl(e.id,id)):'<div class="muted">Selecciona un evento.</div>'}
     <div class="row gap8 mt12"><button class="btn btn-secondary btn-sm" onclick="waLink('${id}','${e?.id}')">${ic('whats')} Enviar por WhatsApp</button></div></div>
     <div class="card"><div class="section-title mb8">Su página de entradas</div><p class="muted mb16" style="font-size:13px">Solo las entradas de ${esc(c.name)}: códigos, reclamadas y quién ya ingresó. Envíasela para que controle sus ventas sin entrar al panel de administrador.</p>${e?linkBox(panelUrl(e.id,id)):'<div class="muted">Selecciona un evento.</div>'}
@@ -1226,7 +1226,7 @@ function viewReports(v){
     <div class="kpi"><div class="k-ico">${ic('ticket')}</div><div class="k-val">${st.total}</div><div class="k-label">Entradas</div></div>
     <div class="kpi"><div class="k-ico">${ic('check2')}</div><div class="k-val">${st.checkinRate}%</div><div class="k-label">Asistencia</div></div>
   </div>
-  <div class="grid" style="grid-template-columns:1.4fr 1fr">
+  <div class="grid cols-main">
     <div class="card"><div class="section-title mb16">Ranking de cabezas</div>${byCab.length?byCab.map(c=>`<div class="bar-row"><div class="b-label">${esc(c.name)}</div><div class="bar-track"><div class="bar-fill" style="width:${c.rev/maxRev*100}%"></div></div><div class="b-val">${money(c.rev)}</div></div>`).join(''):'<div class="muted" style="font-size:13px">Sin ventas registradas.</div>'}</div>
     <div class="card"><div class="section-title mb16">Composición de entradas</div>
       <div class="donut-wrap"><div class="donut" style="background:conic-gradient(${grad})"><div class="hole"><b>${st.total}</b><span>TOTAL</span></div></div>
@@ -1243,7 +1243,7 @@ function viewReports(v){
 function viewSettings(v){
   const s=state.settings;
   v.innerHTML=`<div class="mb24"><div class="eyebrow">Ajustes</div><div class="page-title">Configuración</div></div>
-  <div class="grid" style="grid-template-columns:1fr 1fr;align-items:start">
+  <div class="grid cols-2" style="align-items:start">
     <div class="card"><div class="section-title mb16">General</div>
       <div class="field"><label class="label">Organización</label><input id="s-org" value="${esc(s.org)}"></div>
       <div class="field-row"><div class="field"><label class="label">Moneda</label><select id="s-cur"><option value="PEN" ${s.currency==='PEN'?'selected':''}>Soles (S/)</option><option value="USD" ${s.currency==='USD'?'selected':''}>Dólares ($)</option></select></div>
