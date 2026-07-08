@@ -304,6 +304,72 @@ language sql security definer set search_path = public as $$
   order by t.created_at desc;
 $$;
 
+-- Registrar el INGRESO de forma ATÓMICA y autoritativa.
+--   Bloquea la fila (for update): si dos puertas escanean el mismo QR a la vez,
+--   una gana ('ok') y la otra recibe 'already'. Imposible el doble ingreso.
+--   Devuelve el resultado + datos para pintar el resultado en el escáner.
+drop function if exists public.scan_ticket(text, text);
+create function public.scan_ticket(p_id text, p_event_id text default null)
+returns table(
+  result      text,   -- ok | already | unclaimed | void | other_event | not_found
+  ticket_id   text,
+  code        text,
+  status      text,
+  holder      jsonb,
+  type_name   text,
+  event_id    text,
+  event_name  text,
+  cabeza_name text,
+  used_at     bigint
+)
+language plpgsql security definer set search_path = public as $$
+declare
+  v_status text;
+  v_event  text;
+  v_res    text;
+begin
+  if not public.is_admin() then raise exception 'not_authorized'; end if;
+
+  -- Bloqueo de fila: serializa los escaneos simultáneos del mismo código
+  select t.status, t.event_id into v_status, v_event
+  from tickets t where t.id = p_id
+  for update;
+
+  if v_status is null then
+    result := 'not_found';
+    return next;
+    return;
+  end if;
+
+  if p_event_id is not null and v_event is distinct from p_event_id then
+    v_res := 'other_event';
+  elsif v_status = 'void' then
+    v_res := 'void';
+  elsif v_status = 'unclaimed' then
+    v_res := 'unclaimed';
+  elsif v_status = 'used' then
+    v_res := 'already';
+  elsif v_status = 'valid' then
+    update tickets t
+      set status  = 'used',
+          used_at = (extract(epoch from now())*1000)::bigint
+      where t.id = p_id;
+    v_res := 'ok';
+  else
+    v_res := 'already';
+  end if;
+
+  return query
+    select v_res, t.id, t.code, t.status, t.holder,
+           tt.name, t.event_id, e.name, cb.name, t.used_at
+    from tickets t
+    left join ticket_types tt on tt.id = t.type_id
+    left join events      e  on e.id  = t.event_id
+    left join cabezas     cb on cb.id = t.cabeza_id
+    where t.id = p_id;
+end;
+$$;
+
 -- Permisos de ejecución
 grant execute on function public.lookup_ticket(text,text)                                to anon, authenticated;
 grant execute on function public.claim_ticket(text,text,text,text,text,text)             to anon, authenticated;
@@ -311,6 +377,7 @@ grant execute on function public.get_ticket(text)                               
 grant execute on function public.submit_request(text,text,text,text,text,text,text,text) to anon, authenticated;
 grant execute on function public.get_cabeza(text)                                        to anon, authenticated;
 grant execute on function public.panel_tickets(text,text)                                to anon, authenticated;
+grant execute on function public.scan_ticket(text,text)                                  to authenticated;
 grant execute on function public.update_my_name(text)                                    to authenticated;
 grant execute on function public.my_tickets()                                            to authenticated;
 grant execute on function public.is_admin()                                              to anon, authenticated;

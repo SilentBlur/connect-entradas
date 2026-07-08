@@ -161,6 +161,11 @@ async function cloudPanelTickets(eid, cid){
   const { data, error } = await sb.rpc('panel_tickets', { p_event_id:eid, p_cabeza_id:cid });
   if(error) throw error; return data || [];
 }
+/* Marca el ingreso en el servidor de forma atómica (evita doble ingreso entre puertas). */
+async function cloudScanTicket(id, eventId){
+  const { data, error } = await sb.rpc('scan_ticket', { p_id:id, p_event_id:eventId||null });
+  if(error) throw error; return data && data[0];
+}
 
 /* ---------- Cuentas de clientes ---------- */
 async function cloudSignUp(email, password, name){
@@ -192,8 +197,11 @@ function subscribeRealtime(){
   try{
     sb.channel('connect-sync')
       .on('postgres_changes', { event:'*', schema:'public' }, ()=>{
+        // Mientras se escanea NO recargamos: recargar re-renderiza la vista y
+        // apagaría la cámara. El escáner ya escribe su verdad con scan_ticket().
+        if(window.__scanning) return;
         clearTimeout(_rtTimer);
-        _rtTimer = setTimeout(async ()=>{ try{ await cloudLoadAll(); if(window.render) render(); }catch(e){} }, 900);
+        _rtTimer = setTimeout(async ()=>{ if(window.__scanning) return; try{ await cloudLoadAll(); if(window.render) render(); }catch(e){} }, 2500);
       })
       .subscribe();
   }catch(e){ console.warn('realtime off', e); }

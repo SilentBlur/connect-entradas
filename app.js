@@ -181,6 +181,46 @@ function qrDataURL(text, cell=5, margin=2){
 }
 function ticketPayload(t){ return `CNCT|${t.id}|${t.token}`; }
 
+/* ---------- Descargar / guardar la entrada como imagen (sirve en iPhone y Android) ---------- */
+let _viewTicket = null;
+function setViewTicket(t){ _viewTicket = t; }
+function downloadCurrentTicket(){ if(_viewTicket) downloadTicketImage(_viewTicket); else toast('No se pudo generar la entrada','err'); }
+function _roundRect(x,l,t,w,h,r){ x.beginPath(); x.moveTo(l+r,t); x.arcTo(l+w,t,l+w,t+h,r); x.arcTo(l+w,t+h,l,t+h,r); x.arcTo(l,t+h,l,t,r); x.arcTo(l,t,l+w,t,r); x.closePath(); }
+function _wrapText(x,text,cx,cy,maxW,lh){ const words=String(text||'').split(' '); let line=''; const lines=[];
+  for(const w of words){ const test=line?line+' '+w:w; if(x.measureText(test).width>maxW && line){ lines.push(line); line=w; } else line=test; }
+  if(line) lines.push(line); lines.slice(0,2).forEach((ln,i)=>x.fillText(ln,cx,cy+i*lh)); return Math.min(lines.length,2); }
+function downloadTicketImage(t){
+  try{
+    const e=DB.event(t.eventId)||{}; const ty=DB.type(e,t.typeId)||{};
+    const sc=2, W=720, H=1160, c=document.createElement('canvas'); c.width=W*sc; c.height=H*sc;
+    const x=c.getContext('2d'); x.scale(sc,sc); x.textAlign='center';
+    x.fillStyle='#0b0b0c'; x.fillRect(0,0,W,H);
+    x.strokeStyle='rgba(255,255,255,.14)'; x.lineWidth=2; _roundRect(x,24,24,W-48,H-48,26); x.stroke();
+    x.fillStyle=ty.color||'#ffffff'; _roundRect(x,24,24,W-48,10,6); x.fill();
+    x.fillStyle='#ffffff'; x.font='700 30px Georgia, serif'; x.fillText('CONNECT', W/2, 100);
+    x.fillStyle='rgba(255,255,255,.5)'; x.font='400 12px Arial'; x.fillText('ENTRADA OFICIAL', W/2, 124);
+    x.fillStyle='#ffffff'; x.font='700 30px Georgia, serif'; const n=_wrapText(x, e.name||'Evento', W/2, 172, W-120, 36);
+    x.fillStyle='rgba(255,255,255,.65)'; x.font='400 15px Arial';
+    let yTop=172+n*36+6; x.fillText([longDate(e.dateISO), e.time].filter(Boolean).join(' · '), W/2, yTop);
+    if(e.venue){ yTop+=22; x.fillText(e.venue, W/2, yTop); }
+    const qs=360, qx=(W-qs)/2, qy=yTop+40;
+    const img=new Image();
+    img.onload=()=>{
+      x.fillStyle='#ffffff'; _roundRect(x,qx-20,qy-20,qs+40,qs+40,20); x.fill();
+      x.drawImage(img,qx,qy,qs,qs);
+      let yy=qy+qs+66; x.fillStyle='#ffffff'; x.font='700 24px Georgia, serif'; x.fillText((t.holder&&t.holder.name)||'Entrada', W/2, yy);
+      yy+=30; x.fillStyle='rgba(255,255,255,.6)'; x.font='400 15px Arial'; x.fillText(ty.name||'', W/2, yy);
+      yy+=44; x.fillStyle='rgba(255,255,255,.07)'; _roundRect(x,W/2-140,yy-30,280,46,10); x.fill();
+      x.fillStyle='#ffffff'; x.font='700 22px monospace'; x.fillText(t.code||'', W/2, yy);
+      x.fillStyle='rgba(255,255,255,.4)'; x.font='400 12px Arial'; x.fillText('Personal e intransferible · connect-lima.com', W/2, H-46);
+      const a=document.createElement('a'); a.href=c.toDataURL('image/png'); a.download='entrada-'+(t.code||'connect')+'.png';
+      document.body.appendChild(a); a.click(); a.remove(); toast('Entrada descargada','ok');
+    };
+    img.onerror=()=>toast('No se pudo generar la imagen','err');
+    img.src=qrDataURL(ticketPayload(t),8,1);
+  }catch(err){ console.error(err); toast('No se pudo descargar','err'); }
+}
+
 /* ============================================================
    SHELL  (sidebar + topbar)
    ============================================================ */
@@ -239,7 +279,7 @@ function setActiveEvent(id){ state.settings.activeEventId=id; DB.save(); render(
    ============================================================ */
 let currentScanner = null;
 function go(route){ location.hash = '#/'+route; }
-function stopScanner(){ if(currentScanner){ try{ currentScanner.stop().then(()=>currentScanner.clear()).catch(()=>{});}catch(e){} currentScanner=null; } }
+function stopScanner(){ window.__scanning=false; if(currentScanner){ try{ currentScanner.stop().then(()=>currentScanner.clear()).catch(()=>{});}catch(e){} currentScanner=null; } }
 
 async function render(){
   const hash = location.hash.replace(/^#\/?/, '') || 'home';
@@ -727,9 +767,10 @@ function ticketCardHTML(t){
 }
 function showTicketModal(id){
   const t=state.tickets.find(x=>x.id===id); if(!t) return;
+  setViewTicket(t);
   modal({ title:'Entrada', sub:'QR personal e intransferible', size:'narrow', body:ticketCardHTML(t),
     footer:`<button class="btn btn-ghost" onclick="closeModal()">Cerrar</button>
-      <button class="btn btn-secondary" onclick="copyText('${claimUrl(t.eventId, t.cabezaId||'')}')">${ic('link')} Link</button>
+      <button class="btn btn-secondary" onclick="downloadCurrentTicket()">${ic('download')} Descargar</button>
       <button class="btn btn-primary" onclick="window.open('#/t/${t.id}','_blank')">${ic('eye')} Abrir entrada</button>` });
 }
 
@@ -1036,25 +1077,48 @@ function viewScanner(v){
   v.innerHTML=`<div class="scanner">
     <div class="between mb16"><div><div class="eyebrow">${esc(e.name)}</div><div class="page-title">Escáner</div></div></div>
     <div class="scan-stats"><div class="s"><b>${st.valid}</b><span>Válidas</span></div><div class="s"><b style="color:var(--success)">${st.used}</b><span>Ingresaron</span></div><div class="s"><b>${st.valid-st.used}</b><span>Faltan</span></div></div>
+    <div id="scan-queue" class="hidden" style="text-align:center;font-size:12px;font-weight:600;color:#0b0b0c;background:var(--warn,#f4b740);border-radius:8px;padding:6px 10px;margin-bottom:10px"></div>
     <div class="card" style="padding:14px">
       <div id="qr-reader" style="width:100%"></div>
       <div id="scan-fallback" class="hidden"><div class="scan-frame"><div class="empty" style="padding:30px"><div class="brand-rombo rombo"></div><h3>Cámara no disponible</h3><p>Para usar la cámara abre la app en <b>https</b> o <b>localhost</b> y concede permiso. Mientras tanto, valida por código abajo.</p></div></div></div>
-      <div class="row gap8 mt12"><button class="btn btn-secondary grow" id="scan-start" onclick="startScan('${e.id}')">${ic('scan')} Iniciar cámara</button></div>
+      <div class="row gap8 mt12"><button class="btn btn-secondary grow" id="scan-start" onclick="startScan('${e.id}')">${ic('scan')} Iniciar cámara</button><button class="btn btn-ghost hidden" id="scan-torch" title="Linterna" style="min-width:52px">${ic('scan')}</button></div>
       <div class="divider"><span></span></div>
       <label class="label">Validación manual por código</label>
       <div class="row gap8"><input id="manual-code" placeholder="Ej. RNZ-AB12" style="text-transform:uppercase" onkeydown="if(event.key==='Enter')validateManual('${e.id}')"><button class="btn btn-primary" onclick="validateManual('${e.id}')">${ic('check')} Validar</button></div>
     </div>
   </div>`;
+  updateQueueBadge();
 }
 function startScan(eid){
   if(typeof Html5Qrcode==='undefined'){ $('#scan-fallback').classList.remove('hidden'); return toast('Lector no disponible (sin conexión)','err'); }
   const btn=$('#scan-start'); btn.disabled=true; btn.innerHTML='Iniciando...';
   currentScanner = new Html5Qrcode('qr-reader', {verbose:false});
-  currentScanner.start({facingMode:'environment'}, {fps:10, qrbox:{width:240,height:240}},
+  // Recuadro de lectura relativo al visor (más tolerante a distintos celulares/distancias).
+  const qrbox=(vw,vh)=>{ const s=Math.max(200, Math.min(340, Math.floor(Math.min(vw,vh)*0.72))); return {width:s,height:s}; };
+  const config={ fps:12, qrbox, aspectRatio:1.0, disableFlip:true,
+    experimentalFeatures:{ useBarCodeDetectorIfSupported:true } };
+  currentScanner.start({facingMode:'environment'}, config,
     (txt)=>{ onScanHit(eid, txt); },
     ()=>{}
-  ).then(()=>{ btn.innerHTML=ic('x')+' Detener'; btn.disabled=false; btn.onclick=()=>{stopScanner();viewScanner($('#view'));}; })
-   .catch(err=>{ btn.disabled=false; btn.innerHTML=ic('scan')+' Iniciar cámara'; $('#scan-fallback').classList.remove('hidden'); toast('No se pudo abrir la cámara','err'); });
+  ).then(()=>{
+    window.__scanning=true;
+    btn.innerHTML=ic('x')+' Detener'; btn.disabled=false;
+    btn.onclick=()=>{stopScanner();viewScanner($('#view'));};
+    setupTorch();
+  }).catch(err=>{ window.__scanning=false; btn.disabled=false; btn.innerHTML=ic('scan')+' Iniciar cámara'; $('#scan-fallback').classList.remove('hidden'); toast('No se pudo abrir la cámara','err'); });
+}
+/* Linterna: aparece solo si el dispositivo la soporta (clave con poca luz). */
+function setupTorch(){
+  try{
+    const tbtn=$('#scan-torch'); if(!tbtn||!currentScanner||!currentScanner.getRunningTrackCapabilities) return;
+    const caps=currentScanner.getRunningTrackCapabilities();
+    if(caps && caps.torch){
+      tbtn.classList.remove('hidden'); tbtn.dataset.on='0';
+      tbtn.onclick=()=>{ const on=tbtn.dataset.on==='1';
+        currentScanner.applyVideoConstraints({advanced:[{torch:!on}]})
+          .then(()=>{ tbtn.dataset.on=on?'0':'1'; tbtn.style.background=on?'':'var(--fg,#fff)'; tbtn.style.color=on?'':'#000'; }).catch(()=>{}); };
+    } else { tbtn.classList.add('hidden'); }
+  }catch(e){}
 }
 let lastScan = 0;
 function onScanHit(eid, txt){
@@ -1062,21 +1126,64 @@ function onScanHit(eid, txt){
   processScan(eid, txt);
 }
 function validateManual(eid){ const code=$('#manual-code').value.trim().toUpperCase(); if(!code) return; processScan(eid, code); $('#manual-code').value=''; }
-function processScan(eid, raw){
+function buzz(kind){ if(navigator.vibrate) navigator.vibrate(kind==='ok'?80:[60,40,60]); }
+function persistLocal(){ try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){} }
+function updateScanStats(){ const e=DB.activeEvent(); if(!e) return; const st=DB.stats(e.id); const box=$('.scan-stats');
+  if(box) box.innerHTML=`<div class="s"><b>${st.valid}</b><span>Válidas</span></div><div class="s"><b style="color:var(--success)">${st.used}</b><span>Ingresaron</span></div><div class="s"><b>${st.valid-st.used}</b><span>Faltan</span></div>`; }
+
+/* ---- Cola de ingresos offline (si se cae el WiFi de la puerta, no se pierde nada) ---- */
+const SCAN_Q_KEY='connect_scan_queue';
+function scanQueue(){ try{ return JSON.parse(localStorage.getItem(SCAN_Q_KEY)||'[]'); }catch(e){ return []; } }
+function setScanQueue(q){ try{ localStorage.setItem(SCAN_Q_KEY, JSON.stringify(q)); }catch(e){} }
+function queueOfflineScan(id){ const q=scanQueue(); if(!q.includes(id)){ q.push(id); setScanQueue(q); } }
+function updateQueueBadge(){ const b=$('#scan-queue'); if(!b) return; const n=scanQueue().length;
+  if(n){ b.classList.remove('hidden'); b.textContent=n+' por sincronizar'; } else { b.classList.add('hidden'); } }
+async function flushScanQueue(){
+  const q=scanQueue(); if(!q.length || typeof cloudScanTicket!=='function') return;
+  const eid=(DB.activeEvent()&&DB.activeEvent().id)||null;
+  const remaining=[]; let conflicts=0, synced=0;
+  for(const id of q){
+    try{ const r=await cloudScanTicket(id, eid); if(r&&r.result==='already') conflicts++; else synced++; }
+    catch(e){ remaining.push(id); }
+  }
+  setScanQueue(remaining); updateQueueBadge();
+  if(synced) toast(synced+' ingreso(s) sincronizado(s)','ok');
+  if(conflicts) toast(conflicts+' ya estaban registrados en otra puerta','warn');
+}
+window.addEventListener('online', ()=>{ flushScanQueue(); });
+
+async function processScan(eid, raw){
+  // 1) Resolver la entrada localmente: instantáneo y funciona aunque no haya señal.
   let t=null; const parts=String(raw).split('|');
   if(parts[0]==='CNCT'&&parts[1]) t=state.tickets.find(x=>x.id===parts[1]&&x.token===parts[2]);
   if(!t) t=state.tickets.find(x=>x.code===String(raw).trim().toUpperCase());
-  let kind='err', title='No válida', detail='Código no reconocido';
-  if(t){
-    const e=DB.event(t.eventId); const ty=DB.type(e,t.typeId); const cb=DB.cabeza(t.cabezaId);
-    if(t.eventId!==eid){ kind='err'; title='Otro evento'; detail='Esta entrada es de "'+(e?e.name:'?')+'"'; }
-    else if(t.status==='void'){ kind='err'; title='Anulada'; detail='Esta entrada fue anulada'; }
-    else if(t.status==='unclaimed'){ kind='warn'; title='Sin reclamar'; detail='El código aún no fue canjeado'; }
-    else if(t.status==='used'){ kind='warn'; title='Ya ingresó'; detail='Registrada '+timeAgo(t.usedAt); }
-    else { kind='ok'; title='Bienvenido'; detail=''; t.status='used'; t.usedAt=Date.now(); DB.save(); }
-    showScanResult(kind,title,detail,t);
-  } else { showScanResult(kind,title,detail,null); }
-  if(navigator.vibrate) navigator.vibrate(kind==='ok'?80:[60,40,60]);
+  if(!t){ showScanResult('err','No válida','Código no reconocido',null); buzz('err'); return; }
+
+  // 2) Chequeos que no dependen del servidor.
+  const e=DB.event(t.eventId);
+  if(t.eventId!==eid){ showScanResult('err','Otro evento','Esta entrada es de "'+(e?e.name:'?')+'"',t); buzz('err'); return; }
+  if(t.status==='void'){ showScanResult('err','Anulada','Esta entrada fue anulada',t); buzz('err'); return; }
+  if(t.status==='unclaimed'){ showScanResult('warn','Sin reclamar','El código aún no fue canjeado',t); buzz('warn'); return; }
+  if(t.status==='used'){ showScanResult('warn','Ya ingresó','Registrada '+timeAgo(t.usedAt),t); buzz('warn'); return; }
+
+  // 3) 'valid' → marcar en el SERVIDOR de forma atómica (una sola puerta gana).
+  try{
+    const r=await cloudScanTicket(t.id, eid);
+    if(!r) throw new Error('sin respuesta');
+    if(r.result==='ok'){ t.status='used'; t.usedAt=r.used_at||Date.now(); persistLocal(); showScanResult('ok','Bienvenido','',t); buzz('ok'); }
+    else if(r.result==='already'){ t.status='used'; t.usedAt=r.used_at||t.usedAt||Date.now(); persistLocal(); showScanResult('warn','Ya ingresó','Registrada en otra puerta · '+timeAgo(t.usedAt),t); buzz('warn'); }
+    else if(r.result==='void'){ t.status='void'; persistLocal(); showScanResult('err','Anulada','Esta entrada fue anulada',t); buzz('err'); }
+    else if(r.result==='unclaimed'){ t.status='unclaimed'; persistLocal(); showScanResult('warn','Sin reclamar','El código aún no fue canjeado',t); buzz('warn'); }
+    else if(r.result==='other_event'){ showScanResult('err','Otro evento','Esta entrada no es de este evento',t); buzz('err'); }
+    else if(r.result==='not_found'){ showScanResult('err','No válida','Código no reconocido',null); buzz('err'); }
+    else { t.status='used'; t.usedAt=Date.now(); persistLocal(); showScanResult('ok','Bienvenido','',t); buzz('ok'); }
+    updateScanStats();
+  }catch(err){
+    // 4) Sin conexión → registrar local + encolar. La puerta NUNCA se frena.
+    t.status='used'; t.usedAt=Date.now(); queueOfflineScan(t.id); persistLocal();
+    showScanResult('ok','Ingreso registrado','Sin conexión · se sincroniza luego',t); buzz('ok');
+    updateScanStats(); updateQueueBadge();
+  }
 }
 function showScanResult(kind,title,detail,t){
   const e=t?DB.event(t.eventId):null; const ty=t?DB.type(e,t.typeId):null; const cb=t?DB.cabeza(t.cabezaId):null;
@@ -1323,7 +1430,8 @@ async function confirmRedeem(){
   toast('¡Entrada reclamada!','ok');
 }
 function showClaimedTicket(t){
-  $('#claim-body').innerHTML=`<div class="txt-c mb16"><div class="badge badge-green"><span class="dot"></span>Entrada lista</div></div>${ticketCardHTML(t)}<div class="row gap8 mt16"><button class="btn btn-ghost grow" onclick="window.print()">${ic('download')} Guardar</button><button class="btn btn-secondary grow" onclick="window.open('#/t/${t.id}','_blank')">${ic('eye')} Abrir</button></div><p class="dim mt12" style="font-size:11.5px;text-align:center">Guarda una captura de tu QR. Es personal e intransferible.</p>`;
+  setViewTicket(t);
+  $('#claim-body').innerHTML=`<div class="txt-c mb16"><div class="badge badge-green"><span class="dot"></span>Entrada lista</div></div>${ticketCardHTML(t)}<div class="row gap8 mt16"><button class="btn btn-primary grow" onclick="downloadCurrentTicket()">${ic('download')} Descargar entrada</button><button class="btn btn-secondary grow" onclick="window.open('#/t/${t.id}','_blank')">${ic('eye')} Abrir</button></div><p class="dim mt12" style="font-size:11.5px;text-align:center">Te enviamos tu entrada al correo. También podés descargarla o verla desde <b>Mi cuenta</b>.</p>`;
 }
 
 /* PÚBLICO: ver una entrada (link directo) */
@@ -1337,7 +1445,8 @@ async function renderPublicTicket(id){
   if(!DB.event(r.event_id)){ try{ const e=await cloudGetEventPublic(r.event_id); if(e) state.events.push(e); }catch(err){} }
   const t={ id:r.id, token:r.token, code:r.code, eventId:r.event_id, typeId:r.type_id, cabezaId:null,
     holder:r.holder||{name:'',dni:'',email:'',phone:''}, status:r.status };
-  $('#app').innerHTML=publicWrap(`<div class="public-pad"><div class="txt-c mb16"><div class="badge ${t.status==='used'?'badge-blue':t.status==='void'?'badge-red':'badge-green'}"><span class="dot"></span>${t.status==='used'?'Ya ingresó':t.status==='void'?'Anulada':'Entrada válida'}</div></div>${ticketCardHTML(t)}<div class="row gap8 mt16 no-print"><button class="btn btn-primary grow" onclick="window.print()">${ic('download')} Guardar / Imprimir</button></div></div>`);
+  setViewTicket(t);
+  $('#app').innerHTML=publicWrap(`<div class="public-pad"><div class="txt-c mb16"><div class="badge ${t.status==='used'?'badge-blue':t.status==='void'?'badge-red':'badge-green'}"><span class="dot"></span>${t.status==='used'?'Ya ingresó':t.status==='void'?'Anulada':'Entrada válida'}</div></div>${ticketCardHTML(t)}<div class="row gap8 mt16 no-print"><button class="btn btn-primary grow" onclick="downloadCurrentTicket()">${ic('download')} Descargar entrada</button></div></div>`);
 }
 
 /* ============================================================
@@ -1378,6 +1487,7 @@ async function loadAdmin(){
   if(!state.settings.symbol) state.settings.symbol = state.settings.currency==='USD'?'$':'S/';
   render();
   subscribeRealtime();
+  flushScanQueue();   // sincroniza ingresos que quedaron offline en una sesión previa
 }
 async function logout(){ try{ await cloudSignOut(); }catch(e){} state=null; ADMIN_EMAIL=''; location.hash='#/home'; render(); }
 
