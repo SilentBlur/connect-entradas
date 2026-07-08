@@ -44,16 +44,16 @@
     var ok = true, firstBad = null;
     function fail(input, msg){ setErr(input, msg); ok = false; firstBad = firstBad || input; }
 
-    if(nm && (nm.value || '').trim().length < 3) fail(nm, 'Poné tu nombre y apellido');
+    if(nm && (nm.value || '').trim().length < 3) fail(nm, 'Ingresa tu nombre y apellido');
 
     var emv = em ? (em.value || '').trim() : '';
     var phv = ph ? (ph.value || '').trim() : '';
 
-    if(em && emv && !emailOk(emv)) fail(em, 'Revisá tu email');
+    if(em && emv && !emailOk(emv)) fail(em, 'Revisa tu email');
     if(ph && phv && onlyDigits(phv).length < 7) fail(ph, 'El celular está incompleto');
 
     // Hace falta al menos un contacto para enviarte la entrada
-    if(em && ph && !emv && !phv) fail(ph, 'Dejá un email o celular para enviarte la entrada');
+    if(em && ph && !emv && !phv) fail(ph, 'Deja un email o celular para enviarte la entrada');
 
     if(firstBad) firstBad.focus();
     return ok;

@@ -1375,7 +1375,7 @@ function renderClaimAuth(){
   const isReg = CLAIM_AUTH_MODE!=='login';
   box.innerHTML=`
     <div class="badge badge-green mb16"><span class="dot"></span>Código válido</div>
-    <p class="muted" style="font-size:13.5px;margin-bottom:14px">Creá tu cuenta (o iniciá sesión) para reclamar y guardar tu entrada.</p>
+    <p class="muted" style="font-size:13.5px;margin-bottom:14px">Crea tu cuenta (o inicia sesión) para reclamar y guardar tu entrada.</p>
     <div class="auth-tabs sm"><button class="${isReg?'on':''}" onclick="setClaimAuth('register')">Crear cuenta</button><button class="${!isReg?'on':''}" onclick="setClaimAuth('login')">Ya tengo cuenta</button></div>
     <form onsubmit="event.preventDefault();${isReg?'doClaimRegister()':'doClaimLogin()'}">
       ${isReg?`<div class="field"><label class="label">Nombre y apellido</label><input id="ca-name"></div>`:''}
@@ -1387,21 +1387,21 @@ function renderClaimAuth(){
 }
 async function doClaimLogin(){
   const email=($('#ca-email').value||'').trim(), pass=$('#ca-pass').value||''; const err=$('#ca-err'); if(err) err.textContent='';
-  if(!email||!pass){ if(err) err.textContent='Completá email y contraseña.'; return; }
+  if(!email||!pass){ if(err) err.textContent='Completa email y contraseña.'; return; }
   const btn=$('#ca-btn'); btn.disabled=true; btn.textContent='Entrando…';
   const { error }=await cloudSignIn(email,pass);
-  if(error){ if(err) err.textContent=isUnconfirmed(error)?'Tu cuenta no está confirmada todavía. Revisá tu correo.':'Email o contraseña incorrectos.'; btn.disabled=false; btn.textContent='Iniciar sesión y continuar'; return; }
+  if(error){ if(err) err.textContent=isUnconfirmed(error)?'Tu cuenta no está confirmada todavía. Revisa tu correo.':'Email o contraseña incorrectos.'; btn.disabled=false; btn.textContent='Iniciar sesión y continuar'; return; }
   renderClaimForm();
 }
 async function doClaimRegister(){
   const name=($('#ca-name').value||'').trim(), email=($('#ca-email').value||'').trim(), pass=$('#ca-pass').value||''; const err=$('#ca-err'); if(err) err.textContent='';
-  if(!name||!email||!pass){ if(err) err.textContent='Completá todos los campos.'; return; }
+  if(!name||!email||!pass){ if(err) err.textContent='Completa todos los campos.'; return; }
   if(pass.length<6){ if(err) err.textContent='La contraseña debe tener al menos 6 caracteres.'; return; }
   const btn=$('#ca-btn'); btn.disabled=true; btn.textContent='Creando…';
   const { data, error }=await cloudSignUp(email,pass,name);
-  if(error){ if(err) err.textContent=/registered|already|exists/i.test(error.message||'')?'Ese correo ya tiene cuenta. Iniciá sesión.':(error.message||'No se pudo crear.'); btn.disabled=false; btn.textContent='Crear cuenta y continuar'; return; }
+  if(error){ if(err) err.textContent=/registered|already|exists/i.test(error.message||'')?'Ese correo ya tiene cuenta. Inicia sesión.':(error.message||'No se pudo crear.'); btn.disabled=false; btn.textContent='Crear cuenta y continuar'; return; }
   if(data && data.session){ renderClaimForm(); }
-  else { box_msg('Revisá tu correo para confirmar tu cuenta y volvé a ingresar tu código.'); }
+  else { box_msg('Revisa tu correo para confirmar tu cuenta y vuelve a ingresar tu código.'); }
 }
 function box_msg(m){ const box=$('#claim-body'); if(box) box.innerHTML=`<div class="evp-success"><div class="big">${ic('check')}</div><h3>Casi listo</h3><p>${esc(m)}</p></div>`; }
 async function renderClaimForm(){
@@ -1422,7 +1422,7 @@ async function confirmRedeem(){
   catch(err){ console.error(err); const m=String(err.message||err);
     if(/used/.test(m)) return toast('Esta entrada ya ingresó','err');
     if(/void/.test(m)) return toast('Este código fue anulado','err');
-    if(/already_has_ticket/.test(m)) return toast('Ya tenés tu entrada para este evento. Cada persona reclama una sola.','err');
+    if(/already_has_ticket/.test(m)) return toast('Ya tienes tu entrada para este evento. Cada persona reclama una sola.','err');
     if(/already/.test(m)) return toast('Esta entrada ya fue reclamada','err');
     return toast('No se pudo reclamar','err'); }
   const t={ id:res.id, token:res.token, code:p.code, eventId:claimState.eid, typeId:p.typeId, cabezaId:claimState.cid||null, holder, status:'valid' };
@@ -1432,7 +1432,7 @@ async function confirmRedeem(){
 }
 function showClaimedTicket(t){
   setViewTicket(t);
-  $('#claim-body').innerHTML=`<div class="txt-c mb16"><div class="badge badge-green"><span class="dot"></span>Entrada lista</div></div>${ticketCardHTML(t)}<div class="row gap8 mt16"><button class="btn btn-primary grow" onclick="downloadCurrentTicket()">${ic('download')} Descargar entrada</button><button class="btn btn-secondary grow" onclick="window.open('#/t/${t.id}','_blank')">${ic('eye')} Abrir</button></div><p class="dim mt12" style="font-size:11.5px;text-align:center">Te enviamos tu entrada al correo. También podés descargarla o verla desde <b>Mi cuenta</b>.</p>`;
+  $('#claim-body').innerHTML=`<div class="txt-c mb16"><div class="badge badge-green"><span class="dot"></span>Entrada lista</div></div>${ticketCardHTML(t)}<div class="row gap8 mt16"><button class="btn btn-primary grow" onclick="downloadCurrentTicket()">${ic('download')} Descargar entrada</button><button class="btn btn-secondary grow" onclick="window.open('#/t/${t.id}','_blank')">${ic('eye')} Abrir</button></div><p class="dim mt12" style="font-size:11.5px;text-align:center">Te enviamos tu entrada al correo. También puedes descargarla o verla desde <b>Mi cuenta</b>.</p>`;
 }
 
 /* PÚBLICO: ver una entrada (link directo) */
@@ -1526,16 +1526,16 @@ async function renderCustomerHome(){
       <div class="brand-rombo hero-rombo"></div>
       <div class="hero-eyebrow">Cada noche una historia</div>
       <h1>Tu entrada, en un solo lugar</h1>
-      <p class="hero-sub">Reclamá tu código, guardá tu QR y viví los eventos de <b>Connect</b> desde tu celular.</p>
+      <p class="hero-sub">Reclama tu código, guarda tu QR y vive los eventos de <b>Connect</b> desde tu celular.</p>
       <div class="hero-cta">${cta}</div>
     </section>
     <section class="about">
       <h2>Acerca de Connect</h2>
       <p class="about-lead">Connect es una productora de eventos premium en Lima. Creamos experiencias de primer nivel: producción impecable, la mejor música y los ambientes más exclusivos de la ciudad.</p>
       <div class="about-grid">
-        <div class="about-card"><div class="ac-ic">${ic('ticket')}</div><h3>Entrada digital</h3><p>Reclamá tu código y recibí tu QR al instante, listo para el ingreso.</p></div>
-        <div class="about-card"><div class="ac-ic">${ic('check2')}</div><h3>Acceso simple</h3><p>Mostrás tu QR en la puerta. Sin filas, sin papeles.</p></div>
-        <div class="about-card"><div class="ac-ic">${ic('star')}</div><h3>Tu historial</h3><p>Mirá tus próximas entradas y los eventos a los que fuiste.</p></div>
+        <div class="about-card"><div class="ac-ic">${ic('ticket')}</div><h3>Entrada digital</h3><p>Reclama tu código y recibe tu QR al instante, listo para el ingreso.</p></div>
+        <div class="about-card"><div class="ac-ic">${ic('check2')}</div><h3>Acceso simple</h3><p>Muestras tu QR en la puerta. Sin filas, sin papeles.</p></div>
+        <div class="about-card"><div class="ac-ic">${ic('star')}</div><h3>Tu historial</h3><p>Mira tus próximas entradas y los eventos a los que fuiste.</p></div>
       </div>
     </section>`, loggedIn, 'home');
 }
@@ -1574,32 +1574,32 @@ function isUnconfirmed(error){ const m=(error&&(error.code||error.message)||'')+
 async function doLogin(){
   const email=($('#au-email').value||'').trim(), pass=$('#au-pass').value||'';
   const err=$('#au-err'); err.textContent='';
-  if(!email||!pass){ err.textContent='Completá email y contraseña.'; return; }
+  if(!email||!pass){ err.textContent='Completa email y contraseña.'; return; }
   const btn=$('#au-btn'); btn.disabled=true; btn.textContent='Entrando…';
   try{
     const { error } = await cloudSignIn(email, pass);
-    if(error){ err.textContent=isUnconfirmed(error)?'Tu cuenta todavía no está confirmada. Revisá tu correo, o escribinos para activarla.':'Email o contraseña incorrectos.'; btn.disabled=false; btn.textContent='Entrar'; return; }
+    if(error){ err.textContent=isUnconfirmed(error)?'Tu cuenta todavía no está confirmada. Revisa tu correo, o escríbenos para activarla.':'Email o contraseña incorrectos.'; btn.disabled=false; btn.textContent='Entrar'; return; }
     const admin = await cloudIsAdmin();
     location.hash = admin ? '#/dashboard' : '#/cuenta';
     render();
-  }catch(e){ err.textContent='Error de conexión. Probá de nuevo.'; btn.disabled=false; btn.textContent='Entrar'; }
+  }catch(e){ err.textContent='Error de conexión. Prueba de nuevo.'; btn.disabled=false; btn.textContent='Entrar'; }
 }
 async function doRegister(){
   const name=($('#au-name').value||'').trim(), email=($('#au-email').value||'').trim(), pass=$('#au-pass').value||'';
   const err=$('#au-err'); err.textContent='';
-  if(!name||!email||!pass){ err.textContent='Completá todos los campos.'; return; }
+  if(!name||!email||!pass){ err.textContent='Completa todos los campos.'; return; }
   if(pass.length<6){ err.textContent='La contraseña debe tener al menos 6 caracteres.'; return; }
   const btn=$('#au-btn'); btn.disabled=true; btn.textContent='Creando…';
   try{
     const { data, error } = await cloudSignUp(email, pass, name);
     if(error){ err.textContent=/registered|already|exists/i.test(error.message||'')?'Ya existe una cuenta con ese correo.':(error.message||'No se pudo crear la cuenta.'); btn.disabled=false; btn.textContent='Crear mi cuenta'; return; }
     if(data && data.session){ location.hash='#/cuenta'; render(); }
-    else { custShell(`<div class="auth-wrap"><div class="auth-card txt-c"><div class="big-ok">${ic('check')}</div><h2>Revisá tu correo</h2><p class="login-sub">Te enviamos un email para confirmar tu cuenta. Confirmala y volvé a iniciar sesión.</p><a class="btn btn-primary btn-block" href="#/login" style="margin-top:8px">Ir a iniciar sesión</a></div></div>`, false); }
-  }catch(e){ err.textContent='Error de conexión. Probá de nuevo.'; btn.disabled=false; btn.textContent='Crear mi cuenta'; }
+    else { custShell(`<div class="auth-wrap"><div class="auth-card txt-c"><div class="big-ok">${ic('check')}</div><h2>Revisa tu correo</h2><p class="login-sub">Te enviamos un email para confirmar tu cuenta. Confírmala y vuelve a iniciar sesión.</p><a class="btn btn-primary btn-block" href="#/login" style="margin-top:8px">Ir a iniciar sesión</a></div></div>`, false); }
+  }catch(e){ err.textContent='Error de conexión. Prueba de nuevo.'; btn.disabled=false; btn.textContent='Crear mi cuenta'; }
 }
 async function forgotPassword(){
   const email=($('#au-email').value||'').trim();
-  if(!email){ $('#au-err').textContent='Escribí tu email arriba y tocá de nuevo.'; return; }
+  if(!email){ $('#au-err').textContent='Escribe tu email arriba y toca de nuevo.'; return; }
   try{ await cloudResetPassword(email); toast('Te enviamos un email para cambiar tu contraseña','ok'); }
   catch(e){ toast('No se pudo enviar el email','err'); }
 }
@@ -1608,7 +1608,7 @@ function renderSetNewPassword(){
   custShell(`<div class="auth-wrap"><div class="auth-card">
     <div class="brand-wordmark auth-wm"></div>
     <h2 style="text-align:center">Nueva contraseña</h2>
-    <p class="login-sub">Elegí tu nueva contraseña.</p>
+    <p class="login-sub">Elige tu nueva contraseña.</p>
     <form onsubmit="event.preventDefault();doSetNewPassword()">
       <label class="label">Nueva contraseña</label>
       <input id="np-pass" type="password" autocomplete="new-password" placeholder="••••••••">
@@ -1622,7 +1622,7 @@ async function doSetNewPassword(){
   if(pass.length<6){ err.textContent='Mínimo 6 caracteres.'; return; }
   const btn=$('#np-btn'); btn.disabled=true; btn.textContent='Guardando…';
   try{ const { error }=await cloudUpdatePassword(pass); if(error){ err.textContent='No se pudo guardar.'; btn.disabled=false; btn.textContent='Guardar contraseña'; return; } toast('Contraseña actualizada','ok'); location.hash='#/cuenta'; render(); }
-  catch(e){ err.textContent='Error. Probá de nuevo.'; btn.disabled=false; btn.textContent='Guardar contraseña'; }
+  catch(e){ err.textContent='Error. Prueba de nuevo.'; btn.disabled=false; btn.textContent='Guardar contraseña'; }
 }
 
 /* ---------- Hub del cliente ---------- */
@@ -1650,7 +1650,7 @@ async function renderHubTickets(tab){
   const list = (rows||[]).filter(r=> tab==='historial' ? isPast(r) : !isPast(r));
   const host=$('#hub-body'); if(!host) return;
   if(!list.length){
-    host.innerHTML=`<div class="empty"><div class="brand-rombo rombo"></div><h3>${tab==='historial'?'Todavía no fuiste a ningún evento':'No tenés entradas activas'}</h3><p>${tab==='historial'?'Acá vas a ver los eventos a los que asististe.':'Cuando reclames un código, tu entrada aparece acá.'}</p>${tab!=='historial'?'<a class="btn btn-primary" href="#/home" style="margin-top:6px">¿Cómo reclamar?</a>':''}</div>`;
+    host.innerHTML=`<div class="empty"><div class="brand-rombo rombo"></div><h3>${tab==='historial'?'Todavía no fuiste a ningún evento':'No tienes entradas activas'}</h3><p>${tab==='historial'?'Aquí vas a ver los eventos a los que asististe.':'Cuando reclames un código, tu entrada aparece aquí.'}</p>${tab!=='historial'?'<a class="btn btn-primary" href="#/home" style="margin-top:6px">¿Cómo reclamar?</a>':''}</div>`;
     return;
   }
   host.innerHTML = `<div class="hub-tickets">${list.map(r=>{
@@ -1689,8 +1689,8 @@ async function renderHubProfile(){
     </div>
   </div>`;
 }
-async function saveCustName(){ const n=($('#pf-name').value||'').trim(); if(!n) return toast('Escribí tu nombre','err'); try{ await cloudUpdateName(n); toast('Nombre actualizado','ok'); }catch(e){ toast('No se pudo guardar','err'); } }
-async function changeCustEmail(){ const em=($('#pf-email').value||'').trim(); if(!em) return toast('Escribí tu correo','err'); try{ const {error}=await cloudUpdateEmail(em); if(error){ toast('No se pudo cambiar el correo','err'); return; } toast('Te enviamos un email para confirmar','ok'); }catch(e){ toast('No se pudo cambiar el correo','err'); } }
+async function saveCustName(){ const n=($('#pf-name').value||'').trim(); if(!n) return toast('Escribe tu nombre','err'); try{ await cloudUpdateName(n); toast('Nombre actualizado','ok'); }catch(e){ toast('No se pudo guardar','err'); } }
+async function changeCustEmail(){ const em=($('#pf-email').value||'').trim(); if(!em) return toast('Escribe tu correo','err'); try{ const {error}=await cloudUpdateEmail(em); if(error){ toast('No se pudo cambiar el correo','err'); return; } toast('Te enviamos un email para confirmar','ok'); }catch(e){ toast('No se pudo cambiar el correo','err'); } }
 async function changeCustPassword(email){ if(!email) return toast('No encontramos tu correo','err'); try{ await cloudResetPassword(email); toast('Te enviamos un email para cambiar tu contraseña','ok'); }catch(e){ toast('No se pudo enviar el email','err'); } }
 
 document.addEventListener('DOMContentLoaded', boot);
