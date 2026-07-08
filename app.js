@@ -622,6 +622,8 @@ function ticketsTable(list, e){
     if(ui.tq){ const q=ui.tq.toLowerCase(); return (t.holder.name||'').toLowerCase().includes(q)||(t.code||'').toLowerCase().includes(q)||(t.holder.dni||'').includes(q); }
     return true;
   });
+  const sorted = filtered.slice().sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+  const isMobile = matchMedia('(max-width:680px)').matches;
   return `
   <div class="toolbar">
     <div class="search">${ic('search')}<input placeholder="Buscar por nombre, código o DNI..." value="${esc(ui.tq)}" oninput="ui.tq=this.value;refreshTickets('${e.id}')"></div>
@@ -629,10 +631,12 @@ function ticketsTable(list, e){
       ${[['all','Todas'],['valid','Activas'],['used','Ingresó'],['unclaimed','Sin reclamar']].map(([k,l])=>`<button class="${ui.tfilter===k?'active':''}" onclick="ui.tfilter='${k}';refreshTickets('${e.id}')">${l} ${counts[k]?`(${counts[k]})`:''}</button>`).join('')}
     </div>
   </div>
-  ${filtered.length? `<div class="table-wrap"><table>
+  ${filtered.length? (isMobile
+    ? `<div class="tk-cards">${sorted.map(t=>ticketCard(t,e)).join('')}</div>`
+    : `<div class="table-wrap"><table>
     <thead><tr><th>Asistente</th><th>Tipo</th><th>Código</th><th>Cabeza</th><th>Pago</th><th>Estado</th><th></th></tr></thead>
-    <tbody>${filtered.sort((a,b)=>b.createdAt-a.createdAt).map(t=>ticketRow(t,e)).join('')}</tbody>
-  </table></div>` : `<div class="empty"><div class="brand-rombo rombo"></div><h3>Sin entradas</h3><p>No hay entradas que coincidan con el filtro.</p></div>`}`;
+    <tbody>${sorted.map(t=>ticketRow(t,e)).join('')}</tbody>
+  </table></div>`) : `<div class="empty"><div class="brand-rombo rombo"></div><h3>Sin entradas</h3><p>No hay entradas que coincidan con el filtro.</p></div>`}`;
 }
 function ticketRow(t,e){
   const ty=DB.type(e,t.typeId); const cb=DB.cabeza(t.cabezaId);
@@ -645,6 +649,26 @@ function ticketRow(t,e){
     <td>${statusTicket(t)}</td>
     <td><div class="t-actions"><button class="btn-icon btn-xs btn-ghost" title="Ver QR" onclick="showTicketModal('${t.id}')">${ic('eye')}</button><button class="btn-icon btn-xs btn-ghost" title="Anular" onclick="voidTicket('${t.id}')">${ic('trash')}</button></div></td>
   </tr>`;
+}
+function ticketCard(t,e){
+  const ty=DB.type(e,t.typeId); const cb=DB.cabeza(t.cabezaId); const named=!!t.holder.name;
+  return `<div class="tk-card">
+    <div class="tk-card-top">
+      <div class="tk-name ${named?'':'muted'}">${named?esc(t.holder.name):'Sin reclamar'}</div>
+      ${statusTicket(t)}
+    </div>
+    <div class="tk-sub">${named&&t.holder.dni?'DNI '+esc(t.holder.dni):'—'}</div>
+    <div class="tk-chips">
+      <span class="badge" style="background:${ty?ty.color+'22':'#333'};color:${ty?ty.color:'#999'};border-color:${ty?ty.color+'55':'#444'}">${esc(ty?.name||'?')}</span>
+      <span class="code-chip" onclick="copyText('${t.code}')">${esc(t.code)}</span>
+      ${payBadge(t)}
+    </div>
+    <div class="tk-cabeza">${cb?('Cabeza · '+esc(cb.name)):'<span class="dim">Sin cabeza</span>'}</div>
+    <div class="tk-actions">
+      <button class="btn btn-ghost btn-sm grow" onclick="showTicketModal('${t.id}')">${ic('eye')} Ver QR</button>
+      <button class="btn-icon btn-ghost" title="Anular" onclick="voidTicket('${t.id}')">${ic('trash')}</button>
+    </div>
+  </div>`;
 }
 function statusTicket(t){
   if(t.status==='used') return `<span class="badge badge-blue"><span class="dot"></span>Ingresó</span>`;
@@ -1061,9 +1085,29 @@ function attendeesRows(eid){
   if(q) list=list.filter(t=>{const cb=DB.cabeza(t.cabezaId);return (t.holder.name||'').toLowerCase().includes(q)||(t.holder.dni||'').includes(q)||(t.code||'').toLowerCase().includes(q)||(cb&&cb.name.toLowerCase().includes(q));});
   list.sort((a,b)=>(b.usedAt||0)-(a.usedAt||0)||(b.claimedAt||0)-(a.claimedAt||0));
   if(!list.length) return q?`<div class="empty"><div class="brand-rombo rombo"></div><h3>Sin resultados</h3><p>Nadie coincide con "${esc(ui.aq)}".</p></div>`:`<div class="empty"><div class="brand-rombo rombo"></div><h3>Sin asistentes aún</h3><p>Las personas que reclamen su entrada aparecerán aquí.</p></div>`;
-  return `<div class="muted mb12" style="font-size:12.5px">${list.length} asistente${list.length!==1?'s':''}${q?' encontrado'+(list.length!==1?'s':''):''}</div><div class="table-wrap"><table><thead><tr><th>Asistente</th><th>Tipo</th><th>Cabeza</th><th>Estado</th><th>Hora de ingreso</th><th></th></tr></thead><tbody>${list.map(t=>{const cb=DB.cabeza(t.cabezaId);return `<tr><td><div class="who">${esc(t.holder.name)}</div><div class="sub">${esc(t.holder.dni||'')}</div></td><td>${esc(DB.type(e,t.typeId)?.name||'')}</td><td>${cb?esc(cb.name):'<span class="dim">—</span>'}</td><td>${t.status==='used'?'<span class="badge badge-blue"><span class="dot"></span>Ingresó</span>':'<span class="badge badge-green"><span class="dot"></span>Por llegar</span>'}</td><td class="mono">${t.usedAt?timeStr(t.usedAt):'—'}</td><td>${t.status==='used'?`<button class="btn btn-ghost btn-xs" onclick="undoCheckin('${t.id}')">Deshacer</button>`:`<button class="btn btn-secondary btn-xs" onclick="manualCheckin('${t.id}')">Marcar ingreso</button>`}</td></tr>`}).join('')}</tbody></table></div>`;
+  const isMobile = matchMedia('(max-width:680px)').matches;
+  const head = `<div class="muted mb12" style="font-size:12.5px">${list.length} asistente${list.length!==1?'s':''}${q?' encontrado'+(list.length!==1?'s':''):''}</div>`;
+  if(isMobile) return head+`<div class="tk-cards">${list.map(t=>attendeeCard(t,e)).join('')}</div>`;
+  return head+`<div class="table-wrap"><table><thead><tr><th>Asistente</th><th>Tipo</th><th>Cabeza</th><th>Estado</th><th>Hora de ingreso</th><th></th></tr></thead><tbody>${list.map(t=>{const cb=DB.cabeza(t.cabezaId);return `<tr><td><div class="who">${esc(t.holder.name)}</div><div class="sub">${esc(t.holder.dni||'')}</div></td><td>${esc(DB.type(e,t.typeId)?.name||'')}</td><td>${cb?esc(cb.name):'<span class="dim">—</span>'}</td><td>${t.status==='used'?'<span class="badge badge-blue"><span class="dot"></span>Ingresó</span>':'<span class="badge badge-green"><span class="dot"></span>Por llegar</span>'}</td><td class="mono">${t.usedAt?timeStr(t.usedAt):'—'}</td><td>${t.status==='used'?`<button class="btn btn-ghost btn-xs" onclick="undoCheckin('${t.id}')">Deshacer</button>`:`<button class="btn btn-secondary btn-xs" onclick="manualCheckin('${t.id}')">Marcar ingreso</button>`}</td></tr>`}).join('')}</tbody></table></div>`;
 }
 function refreshAttendees(eid){ const host=$('#att-host'); if(host) host.innerHTML=attendeesRows(eid); }
+function attendeeCard(t,e){
+  const ty=DB.type(e,t.typeId); const cb=DB.cabeza(t.cabezaId); const used=t.status==='used';
+  return `<div class="tk-card">
+    <div class="tk-card-top">
+      <div class="tk-name">${esc(t.holder.name)}</div>
+      ${used?'<span class="badge badge-blue"><span class="dot"></span>Ingresó</span>':'<span class="badge badge-green"><span class="dot"></span>Por llegar</span>'}
+    </div>
+    <div class="tk-sub">${t.holder.dni?'DNI '+esc(t.holder.dni):'—'}${used&&t.usedAt?' · ingresó '+timeStr(t.usedAt):''}</div>
+    <div class="tk-chips">
+      <span class="badge" style="background:${ty?ty.color+'22':'#333'};color:${ty?ty.color:'#999'};border-color:${ty?ty.color+'55':'#444'}">${esc(ty?.name||'?')}</span>
+      ${cb?`<span class="muted" style="font-size:12px">${esc(cb.name)}</span>`:''}
+    </div>
+    <div class="tk-actions">
+      ${used?`<button class="btn btn-ghost btn-sm grow" onclick="undoCheckin('${t.id}')">Deshacer ingreso</button>`:`<button class="btn btn-secondary btn-sm grow" onclick="manualCheckin('${t.id}')">${ic('check')} Marcar ingreso</button>`}
+    </div>
+  </div>`;
+}
 function manualCheckin(id){ const t=state.tickets.find(x=>x.id===id); if(!t)return; t.status='used'; t.usedAt=Date.now(); DB.save(); render(); toast('Ingreso registrado','ok'); }
 function undoCheckin(id){ const t=state.tickets.find(x=>x.id===id); if(!t)return; t.status='valid'; t.usedAt=null; DB.save(); render(); toast('Ingreso deshecho','warn'); }
 
@@ -1475,8 +1519,15 @@ function migrate(){
 /* ============================================================
    ARRANQUE + AUTENTICACIÓN (admin + clientes)
    ============================================================ */
+let _wasMobile = matchMedia('(max-width:680px)').matches;
 async function boot(){
   window.addEventListener('hashchange', render);
+  window.addEventListener('resize', ()=>{
+    const m = matchMedia('(max-width:680px)').matches; if(m===_wasMobile) return; _wasMobile=m;
+    const e = (typeof DB!=='undefined' && DB.activeEvent) ? DB.activeEvent() : null; if(!e) return;
+    if(document.getElementById('tickets-host')) refreshTickets(e.id);
+    if(document.getElementById('att-host')) refreshAttendees(e.id);
+  });
   sb.auth.onAuthStateChange((event)=>{ if(event==='PASSWORD_RECOVERY') renderSetNewPassword(); });
   render();
 }
