@@ -268,7 +268,7 @@
 
 /* ============================================================
    VALIDACIÓN DEL FORMULARIO (errores en línea)
-   Los pinta client.js; acá viven los estilos.
+   Los pinta client.js; aquí viven los estilos.
    ============================================================ */
 .evp .field.cx-bad input,
 .public .field.cx-bad input{

@@ -4,8 +4,8 @@
 //
 // CÓMO DESPLEGAR (desde el panel de Supabase, sin instalar nada):
 //   1. Supabase → Edge Functions → "Create a function" → nombre: send-ticket
-//   2. Pegá este archivo completo y "Deploy".
-//   3. En Edge Functions → Secrets, agregá:  RESEND_API_KEY = (tu clave de Resend)
+//   2. Pega este archivo completo y "Deploy".
+//   3. En Edge Functions → Secrets, agrega:  RESEND_API_KEY = (tu clave de Resend)
 //      (SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY los inyecta Supabase solo.)
 //   Opcionales: TICKET_FROM (remitente) y SITE_URL.
 // ============================================================
@@ -123,10 +123,10 @@ function emailHTML(d: Record<string, string>): string {
           <a href="${d.url}" style="display:inline-block;background:#fff;color:#0A0A0A;text-decoration:none;font-weight:700;font-size:15px;padding:13px 26px;border-radius:12px;">Ver mi entrada</a>
         </td></tr>
         <tr><td style="padding:6px 30px 26px;text-align:center;">
-          <div style="color:#5E5E5E;font-size:11.5px;line-height:1.6;">Mostrá este QR en la puerta. Es personal e intransferible.<br>Guardá este correo o tomale una captura.</div>
+          <div style="color:#5E5E5E;font-size:11.5px;line-height:1.6;">Muestra este QR en la puerta. Es personal e intransferible.<br>Guarda este correo o tómale una captura.</div>
         </td></tr>
         <tr><td style="padding:16px 30px;text-align:center;border-top:1px solid #1F1F1F;">
-          <div style="color:#5E5E5E;font-size:11px;">Connect · Lima — Productora de eventos premium</div>
+          <div style="color:#5E5E5E;font-size:11px;">Connect · Lima. Productora de eventos premium.</div>
         </td></tr>
       </table>
     </td></tr>

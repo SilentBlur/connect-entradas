@@ -12,6 +12,11 @@ const uid = () => Math.random().toString(36).slice(2, 9);
 const token = () => (Date.now().toString(36) + Math.random().toString(36).slice(2, 8)).toUpperCase();
 const ALPHA = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const codeOf = (prefix) => prefix.toUpperCase() + '-' + Array.from({length:4},()=>ALPHA[Math.floor(Math.random()*ALPHA.length)]).join('');
+// Código ÚNICO: evita colisiones al generar miles de entradas (dos personas nunca comparten código).
+function newCode(prefix){
+  const used = (typeof state!=='undefined' && state && state.tickets) ? new Set(state.tickets.map(t=>t.code)) : new Set();
+  let c, i=0; do{ c=codeOf(prefix); } while(used.has(c) && ++i<80); return c;
+}
 const esc = (s) => String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const clamp = (n,a,b)=>Math.max(a,Math.min(b,n));
 const initials = (n)=>((n||'').split(' ').filter(Boolean).map(w=>w[0]).slice(0,2).join('').toUpperCase()||'★');
@@ -737,7 +742,7 @@ function doGenerate(){
   if(mode==='direct'){
     const name=$('#g-name').value.trim();
     if(!name) return toast('Ingresa el nombre','err');
-    const t={ id:'tk_'+uid(), code:codeOf(prefix), token:token(), eventId:eid, typeId, cabezaId:cabezaId||null,
+    const t={ id:'tk_'+uid(), code:newCode(prefix), token:token(), eventId:eid, typeId, cabezaId:cabezaId||null,
       holder:{name, dni:$('#g-dni').value.trim(), email:$('#g-email').value.trim(), phone:$('#g-phone').value.trim()},
       status:'valid', payment:pay, price: pay==='paid'?ty.price:0, source:'admin', createdAt:Date.now(), claimedAt:Date.now(), usedAt:null };
     state.tickets.push(t); DB.save(); closeModal(); showTicketModal(t.id); toast('Entrada generada','ok'); return;
@@ -745,7 +750,7 @@ function doGenerate(){
   const qty = clamp(parseInt($('#g-qty').value)||1,1,500);
   if(qty>remaining) return toast(`Solo quedan ${remaining} cupos de "${ty.name}". Ajusta la cantidad o aumenta los cupos en Tickets.`,'err');
   const made=[];
-  for(let i=0;i<qty;i++){ const t={ id:'tk_'+uid(), code:codeOf(prefix), token:token(), eventId:eid, typeId, cabezaId:cabezaId||null, holder:{name:'',dni:'',email:'',phone:''}, status:'unclaimed', payment:pay, price: pay==='paid'?ty.price:0, source:'admin', createdAt:Date.now(), claimedAt:null, usedAt:null }; state.tickets.push(t); made.push(t); }
+  for(let i=0;i<qty;i++){ const t={ id:'tk_'+uid(), code:newCode(prefix), token:token(), eventId:eid, typeId, cabezaId:cabezaId||null, holder:{name:'',dni:'',email:'',phone:''}, status:'unclaimed', payment:pay, price: pay==='paid'?ty.price:0, source:'admin', createdAt:Date.now(), claimedAt:null, usedAt:null }; state.tickets.push(t); made.push(t); }
   DB.save(); closeModal(); render();
   toast(`${qty} códigos generados`,'ok');
   // Ofrecer exportación inmediata
@@ -1058,7 +1063,7 @@ function approveReq(id){
   if(ty.active===false) return toast(`"${ty.name}" está inactivo. Actívalo en Tickets para aprobar.`,'err');
   if(typeRemaining(e,ty)<1) toast(`Atención: se superaron los cupos de "${ty.name}"`,'warn');
   const pay = ty.access==='paid'?'paid':ty.access==='courtesy'?'courtesy':'free';
-  const t={ id:'tk_'+uid(), code:codeOf(cb?cb.prefix:'CN'), token:token(), eventId:r.eventId, typeId:r.typeId, cabezaId:r.cabezaId,
+  const t={ id:'tk_'+uid(), code:newCode(cb?cb.prefix:'CN'), token:token(), eventId:r.eventId, typeId:r.typeId, cabezaId:r.cabezaId,
     holder:{name:r.name,dni:r.dni,email:r.email,phone:r.phone}, status:'valid', payment:pay, price:pay==='paid'?ty.price:0, source:'request', createdAt:Date.now(), claimedAt:Date.now(), usedAt:null };
   state.tickets.push(t); r.status='approved'; DB.save(); render(); showTicketModal(t.id); toast('Solicitud aprobada · entrada emitida','ok');
 }
@@ -1555,7 +1560,7 @@ function custShell(inner, loggedIn, active){
       <nav class="cust-nav">${right}</nav>
     </header>
     <main class="cust-main">${inner}</main>
-    <footer class="cust-foot">© ${new Date().getFullYear()} Connect · Lima — Productora de eventos premium</footer>
+    <footer class="cust-foot">© ${new Date().getFullYear()} Connect · Lima. Productora de eventos premium.</footer>
   </div>`;
 }
 
