@@ -102,10 +102,10 @@ function emailHTML(d: Record<string, string>): string {
     <tr><td align="center">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background:#141414;border:1px solid #262626;border-radius:18px;overflow:hidden;font-family:Segoe UI,Roboto,Helvetica,Arial,sans-serif;">
         <tr><td style="padding:26px 30px 6px;text-align:center;">
-          <div style="font-size:20px;font-weight:800;letter-spacing:6px;color:#fff;">CONNECT</div>
+          <img src="${SITE}/assets/connect-white-crop.png" alt="Connect" width="158" height="34" style="display:block;margin:0 auto;border:0;outline:none;text-decoration:none;height:34px;width:158px;">
         </td></tr>
         <tr><td style="padding:14px 30px 4px;text-align:center;">
-          <div style="color:#9B9B9B;font-size:13px;">${d.name ? "Hola " + esc(d.name) + "," : "¡Hola!"} tu entrada está lista 🎉</div>
+          <div style="color:#9B9B9B;font-size:13px;">${d.name ? "Hola " + esc(d.name) + "," : "¡Hola!"} tu entrada está lista.</div>
           <h1 style="color:#fff;font-size:23px;margin:10px 0 4px;font-weight:700;">${esc(d.eventName)}</h1>
           <div style="color:#9B9B9B;font-size:13.5px;">${esc(meta)}</div>
         </td></tr>
