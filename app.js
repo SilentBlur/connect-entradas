@@ -861,7 +861,7 @@ function viewCabezaDetail(v,id){
   <div class="grid cols-2 mb24" style="align-items:start">
     <div class="card"><div class="section-title mb8">Link de canje ${e?'· '+esc(e.name):''}</div><p class="muted mb16" style="font-size:13px">Reparte este único link junto con los códigos que le generas a ${esc(c.name)}. El código ya identifica que la venta es suya — no necesita un link propio.</p>${e?linkBox(canjeUrl(e.id)):'<div class="muted">Selecciona un evento.</div>'}
     <div class="row gap8 mt12"><button class="btn btn-secondary btn-sm" onclick="waLink('${id}','${e?.id}')">${ic('whats')} Enviar por WhatsApp</button></div>
-    ${e?`<details style="margin-top:14px"><summary class="muted" style="font-size:12.5px;cursor:pointer">Link personalizado (opcional)</summary><p class="dim" style="font-size:12px;margin:8px 0 10px">Muestra "Te invita ${esc(c.name)}". Úsalo solo para invitar a alguien que todavía no tiene código; para los códigos no hace falta.</p>${linkBox(claimUrl(e.id,id))}</details>`:''}</div>
+    ${e?`<details style="margin-top:14px"><summary class="muted" style="font-size:12.5px;cursor:pointer">Link personalizado (opcional)</summary><p class="dim" style="font-size:12px;margin:8px 0 10px">Igual que el link de canje, pero muestra "Te invita ${esc(c.name)}" en la página. Es solo decorativo — la atribución la hace el código igual.</p>${linkBox(claimUrl(e.id,id))}</details>`:''}</div>
     <div class="card"><div class="section-title mb8">Su página de entradas</div><p class="muted mb16" style="font-size:13px">Solo las entradas de ${esc(c.name)}: códigos, reclamadas y quién ya ingresó. Envíasela para que controle sus ventas sin entrar al panel de administrador.</p>${e?linkBox(panelUrl(e.id,id)):'<div class="muted">Selecciona un evento.</div>'}
     <div class="row gap8 mt12"><button class="btn btn-secondary btn-sm" onclick="window.open('#/panel/${e?.id}/${id}','_blank')">${ic('eye')} Abrir página</button><button class="btn btn-ghost btn-sm" onclick="waPanelLink('${id}','${e?.id}')">${ic('whats')} Enviar por WhatsApp</button></div></div>
   </div>
@@ -1386,8 +1386,7 @@ function renderClaimBody(){
       <div class="cc-h"><span class="r"></span><h3>${claimState.canje?'Canjea tu código':'Reclama tu entrada'}</h3></div>
       <p>${claimState.canje?'Ingresa el código que te enviaron, registra tus datos y recibe tu QR al instante.':'¿Te enviaron un código? Ingrésalo, registra tus datos y recibe tu QR al instante.'}</p>
       <div class="ci"><input id="cl-code" placeholder="TU CÓDIGO" maxlength="14" value="${esc(claimState.precode||'')}" onkeydown="if(event.key==='Enter')redeemCode()"><button class="btn-claim" onclick="redeemCode()">${ic('check')} ${claimState.canje?'Canjear':'Reclamar'}</button></div>
-    </div>
-    ${claimState.canje?'':`<div class="evp-or">o</div><button class="btn btn-ghost btn-block" onclick="setClaimView('request')">${ic('ticket')} No tengo código — Solicitar entrada</button>`}`;
+    </div>`;
 }
 function currentTypePaid(){ const e=DB.event(claimState.eid); return DB.type(e,claimState.typeId)?.access==='paid'; }
 async function submitRequest(){
