@@ -585,7 +585,7 @@ function renderEvTab(e, st){
         ${linkBox(claimUrl(e.id,''))}
         <label class="label mt16">Link de canje (reclamar con código)</label>
         ${linkBox(canjeUrl(e.id))}
-        <p class="muted mt12" style="font-size:12.5px">Para atribuir cada venta, usa el link de cada cabeza (pestaña Cabezas).</p>
+        <p class="muted mt12" style="font-size:12.5px">Reparte este <b>único</b> link. Cada persona pone su código y recibe su QR — el código ya identifica a su cabeza, no necesitas un link por cabeza.</p>
         ${st.pending>0?`<div class="badge badge-amber mt16"><span class="dot"></span>${money(st.pending)} en pagos pendientes</div>`:''}
       </div>
     </div>`;
@@ -812,7 +812,7 @@ function cabezasGrid(e){
     const rev=ts.filter(t=>t.payment==='paid').reduce((a,t)=>a+(+t.price||0),0);
     return `<div class="card"><div class="row between mb12"><div class="row gap10"><div class="avatar">${initials(c.name)}</div><div><div style="font-weight:700">${esc(c.name)}</div><div class="muted" style="font-size:12px">Prefijo ${c.prefix}</div></div></div></div>
     <div class="row" style="gap:18px"><div><div style="font-family:var(--serif);font-size:20px">${ts.length}</div><div class="dim" style="font-size:11px">Entradas</div></div><div><div style="font-family:var(--serif);font-size:20px">${money(rev)}</div><div class="dim" style="font-size:11px">Vendido</div></div></div>
-    <div class="divider"></div>${linkBox(claimUrl(e.id,c.id))}
+    <div class="divider"></div>
     <div class="grid mt12" style="grid-template-columns:1fr 1fr;gap:8px">
       <button class="btn btn-secondary btn-sm" onclick="window.open('#/panel/${e.id}/${c.id}','_blank')">${ic('ticket')} Sus entradas</button>
       <button class="btn btn-primary btn-sm" onclick="openGenerate('${e.id}','${c.id}')">${ic('plus')} Generar</button>
@@ -859,14 +859,15 @@ function viewCabezaDetail(v,id){
     <div class="kpi"><div class="k-ico">${ic('star')}</div><div class="k-val">${c.prefix}</div><div class="k-label">Prefijo</div></div>
   </div>
   <div class="grid cols-2 mb24" style="align-items:start">
-    <div class="card"><div class="section-title mb8">Link de venta ${e?'· '+esc(e.name):''}</div><p class="muted mb16" style="font-size:13px">Para sus compradores: eligen su entrada, ingresan sus datos y la venta queda atribuida a ${esc(c.name)}.</p>${e?linkBox(claimUrl(e.id,id)):'<div class="muted">Selecciona un evento.</div>'}
-    <div class="row gap8 mt12"><button class="btn btn-secondary btn-sm" onclick="waLink('${id}','${e?.id}')">${ic('whats')} Enviar por WhatsApp</button></div></div>
+    <div class="card"><div class="section-title mb8">Link de canje ${e?'· '+esc(e.name):''}</div><p class="muted mb16" style="font-size:13px">Reparte este único link junto con los códigos que le generas a ${esc(c.name)}. El código ya identifica que la venta es suya — no necesita un link propio.</p>${e?linkBox(canjeUrl(e.id)):'<div class="muted">Selecciona un evento.</div>'}
+    <div class="row gap8 mt12"><button class="btn btn-secondary btn-sm" onclick="waLink('${id}','${e?.id}')">${ic('whats')} Enviar por WhatsApp</button></div>
+    ${e?`<details style="margin-top:14px"><summary class="muted" style="font-size:12.5px;cursor:pointer">Link personalizado (opcional)</summary><p class="dim" style="font-size:12px;margin:8px 0 10px">Muestra "Te invita ${esc(c.name)}". Úsalo solo para invitar a alguien que todavía no tiene código; para los códigos no hace falta.</p>${linkBox(claimUrl(e.id,id))}</details>`:''}</div>
     <div class="card"><div class="section-title mb8">Su página de entradas</div><p class="muted mb16" style="font-size:13px">Solo las entradas de ${esc(c.name)}: códigos, reclamadas y quién ya ingresó. Envíasela para que controle sus ventas sin entrar al panel de administrador.</p>${e?linkBox(panelUrl(e.id,id)):'<div class="muted">Selecciona un evento.</div>'}
     <div class="row gap8 mt12"><button class="btn btn-secondary btn-sm" onclick="window.open('#/panel/${e?.id}/${id}','_blank')">${ic('eye')} Abrir página</button><button class="btn btn-ghost btn-sm" onclick="waPanelLink('${id}','${e?.id}')">${ic('whats')} Enviar por WhatsApp</button></div></div>
   </div>
   <div class="card"><div class="section-title mb16">Entradas de ${esc(c.name)}</div>${ts.length?`<div class="table-wrap"><table><thead><tr><th>Asistente</th><th>Tipo</th><th>Código</th><th>Estado</th></tr></thead><tbody>${ts.map(t=>`<tr><td>${t.holder.name?esc(t.holder.name):'<span class="muted">sin reclamar</span>'}</td><td>${esc(DB.type(e,t.typeId)?.name||'')}</td><td><span class="code-chip">${t.code}</span></td><td>${statusTicket(t)}</td></tr>`).join('')}</tbody></table></div>`:'<div class="muted" style="font-size:13px">Aún no tiene entradas en este evento.</div>'}</div>`;
 }
-function waLink(cid,eid){ const c=DB.cabeza(cid); const e=DB.event(eid); if(!c||!e) return; const url=claimUrl(eid,cid); const msg=`¡Hola! Te comparto el link para reclamar tu entrada a *${e.name}* (${longDate(e.dateISO)}):\n${url}`; window.open(`https://wa.me/${(c.phone||'').replace(/\D/g,'')}?text=${encodeURIComponent(msg)}`,'_blank'); }
+function waLink(cid,eid){ const c=DB.cabeza(cid); const e=DB.event(eid); if(!c||!e) return; const url=canjeUrl(eid); const msg=`¡Hola ${c.name.split(' ')[0]}! Este es el link para que tus compradores reclamen su entrada a *${e.name}* (${longDate(e.dateISO)}) con el código que les des:\n${url}`; window.open(`https://wa.me/${(c.phone||'').replace(/\D/g,'')}?text=${encodeURIComponent(msg)}`,'_blank'); }
 function waPanelLink(cid,eid){ const c=DB.cabeza(cid); const e=DB.event(eid); if(!c||!e) return; const url=panelUrl(eid,cid); const msg=`¡Hola ${c.name.split(' ')[0]}! Este es tu panel de *${e.name}*: ahí ves tus entradas, tus códigos y quién ya ingresó:\n${url}`; window.open(`https://wa.me/${(c.phone||'').replace(/\D/g,'')}?text=${encodeURIComponent(msg)}`,'_blank'); }
 
 /* ============================================================
