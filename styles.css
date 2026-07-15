@@ -478,6 +478,24 @@ td .sub{font-size:12px;color:var(--text-dim)}
 .scan-stats .s{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px;text-align:center}
 .scan-stats .s b{font-family:var(--serif);font-size:22px;display:block}
 .scan-stats .s span{font-size:11px;color:var(--text-muted)}
+/* Aviso de "listo para offline" en el escáner */
+.scan-ready{display:flex;align-items:center;gap:11px;border-radius:12px;padding:11px 12px;margin-bottom:12px;border:1px solid var(--border);background:var(--surface)}
+.scan-ready .sr-ico{width:34px;height:34px;flex:none;border-radius:9px;display:flex;align-items:center;justify-content:center}
+.scan-ready .sr-ico svg{width:19px;height:19px;stroke-width:2.2}
+.scan-ready.ok .sr-ico{background:var(--success-dim);color:var(--success)}
+.scan-ready.warn .sr-ico{background:var(--warn-dim);color:var(--warn)}
+.scan-ready .sr-txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.scan-ready .sr-txt b{font-size:13px;font-weight:600}
+.scan-ready .sr-txt span{font-size:11.5px;color:var(--text-muted)}
+.scan-ready.warn{border-color:rgba(224,169,60,.3)}
+.scan-ready #sync-now{flex:none}
+/* Cascarón exclusivo del escáner (rol seguridad) */
+.scan-shell{min-height:100dvh;display:flex;flex-direction:column;background:var(--bg)}
+.scan-top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-bottom:1px solid var(--border-soft);position:sticky;top:0;background:rgba(10,10,10,.86);backdrop-filter:blur(10px);z-index:5}
+.scan-wm{display:block;width:120px;height:26px}
+.scan-top-actions{display:flex;align-items:center;gap:8px}
+.scan-evsel{background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:9px;padding:7px 10px;font-size:12.5px;font-family:inherit;max-width:150px}
+.scan-main{flex:1;padding:18px 16px 40px}
 
 /* ============================================================
    RESPONSIVE

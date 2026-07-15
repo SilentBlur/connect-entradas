@@ -110,7 +110,7 @@ create table if not exists public.profiles (
   id         uuid primary key references auth.users(id) on delete cascade,
   email      text,
   name       text,
-  role       text default 'customer',     -- admin | customer
+  role       text default 'customer',     -- admin | scanner | customer
   created_at timestamptz default now()
 );
 
@@ -119,6 +119,14 @@ create or replace function public.is_admin()
 returns boolean language sql security definer stable set search_path = public as $$
   select coalesce((auth.jwt() ->> 'email') in ('matiasgv_26@hotmail.com','ibindac@gmail.com'), false)
       or exists (select 1 from public.profiles where id = auth.uid() and role = 'admin');
+$$;
+
+-- ¿El usuario es "staff"? = admin O escáner. El escáner puede leer entradas y
+-- registrar ingresos, pero NO gestionar nada (sin escritura, ver políticas RLS).
+create or replace function public.is_staff()
+returns boolean language sql security definer stable set search_path = public as $$
+  select public.is_admin()
+      or exists (select 1 from public.profiles where id = auth.uid() and role = 'scanner');
 $$;
 
 -- Al crearse un usuario nuevo en Auth, se crea su perfil (cliente por defecto)
@@ -199,6 +207,17 @@ create policy public_read_events on public.events for select using (true);
 
 drop policy if exists public_read_types on public.ticket_types;
 create policy public_read_types on public.ticket_types for select using (active is true);
+
+-- ---- Staff (escáner): LECTURA de entradas/cabezas/tipos para escanear (incl. offline) ----
+--      Solo SELECT. La escritura sigue siendo exclusiva de admin (policy admin_all).
+drop policy if exists staff_read_tickets on public.tickets;
+create policy staff_read_tickets on public.tickets for select to authenticated using (public.is_staff());
+
+drop policy if exists staff_read_cabezas on public.cabezas;
+create policy staff_read_cabezas on public.cabezas for select to authenticated using (public.is_staff());
+
+drop policy if exists staff_read_types on public.ticket_types;
+create policy staff_read_types on public.ticket_types for select to authenticated using (public.is_staff());
 
 -- ---- Cliente: puede ver SOLO sus propias entradas ----
 drop policy if exists tickets_owner_select on public.tickets;
@@ -338,7 +357,7 @@ declare
   v_event  text;
   v_res    text;
 begin
-  if not public.is_admin() then raise exception 'not_authorized'; end if;
+  if not public.is_staff() then raise exception 'not_authorized'; end if;
 
   -- Bloqueo de fila: serializa los escaneos simultáneos del mismo código
   select t.status, t.event_id into v_status, v_event
@@ -391,6 +410,7 @@ grant execute on function public.scan_ticket(text,text)                         
 grant execute on function public.update_my_name(text)                                    to authenticated;
 grant execute on function public.my_tickets()                                            to authenticated;
 grant execute on function public.is_admin()                                              to anon, authenticated;
+grant execute on function public.is_staff()                                              to authenticated;
 
 -- ============================================================
 -- 4) REALTIME  (para que Matías e Italo vean los cambios en vivo)

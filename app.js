@@ -284,7 +284,7 @@ function setActiveEvent(id){ state.settings.activeEventId=id; DB.save(); render(
    ============================================================ */
 let currentScanner = null;
 function go(route){ location.hash = '#/'+route; }
-function stopScanner(){ window.__scanning=false; if(currentScanner){ try{ currentScanner.stop().then(()=>currentScanner.clear()).catch(()=>{});}catch(e){} currentScanner=null; } }
+function stopScanner(){ window.__scanning=false; releaseWakeLock(); if(currentScanner){ try{ currentScanner.stop().then(()=>currentScanner.clear()).catch(()=>{});}catch(e){} currentScanner=null; } }
 
 async function render(){
   const hash = location.hash.replace(/^#\/?/, '') || 'home';
@@ -305,15 +305,19 @@ async function render(){
     case 't':       return renderPublicTicket(a);
   }
 
-  // Rutas de admin: requieren sesión de administrador
+  // Rutas de gestión: requieren sesión de admin o de escáner
   if(!state){
     const session = await cloudSession();
     if(!session) return renderAuthPage('login');
-    const admin = await cloudIsAdmin();
-    if(!admin){ location.hash = '#/cuenta'; return; }
+    const role = await cloudRole();
+    if(role==='customer'){ location.hash = '#/cuenta'; return; }
+    IS_SCANNER = (role==='scanner');
     await loadAdmin();
     return;
   }
+
+  // El escáner tiene acceso restringido: solo la pantalla de escaneo, sin panel.
+  if(IS_SCANNER) return renderScannerOnly();
 
   if(!$('.layout')) mountShell();
   // estado activo nav
@@ -1124,9 +1128,16 @@ function viewScanner(v){
   const e=DB.activeEvent();
   if(!e) return v.innerHTML=emptyBlock('Sin eventos','Crea un evento para escanear entradas.','Crear evento',"go('events/new')");
   const st=DB.stats(e.id);
+  const loaded=state.tickets.filter(t=>t.eventId===e.id).length;
+  const ready=loaded>0;
   v.innerHTML=`<div class="scanner">
     <div class="between mb16"><div><div class="eyebrow">${esc(e.name)}</div><div class="page-title">Escáner</div></div></div>
     <div class="scan-stats"><div class="s"><b>${st.valid}</b><span>Válidas</span></div><div class="s"><b style="color:var(--success)">${st.used}</b><span>Ingresaron</span></div><div class="s"><b>${st.valid-st.used}</b><span>Faltan</span></div></div>
+    <div class="scan-ready ${ready?'ok':'warn'}">
+      <div class="sr-ico">${ic(ready?'check2':'alert')}</div>
+      <div class="sr-txt"><b>${ready?'Listo para escanear sin internet':'Aún no hay entradas cargadas'}</b><span>${ready?(loaded+' entradas en este celular'+(LAST_SYNC?' · actualizado '+timeAgo(LAST_SYNC):'')):'Conéctate a internet y toca Sincronizar'}</span></div>
+      <button class="btn btn-ghost btn-sm" id="sync-now" onclick="syncNow()">${ic('download')} Sincronizar</button>
+    </div>
     <div id="scan-queue" class="hidden" style="text-align:center;font-size:12px;font-weight:600;color:#0b0b0c;background:var(--warn,#f4b740);border-radius:8px;padding:6px 10px;margin-bottom:10px"></div>
     <div class="card" style="padding:14px">
       <div id="qr-reader" style="width:100%"></div>
@@ -1154,7 +1165,7 @@ function startScan(eid){
     window.__scanning=true;
     btn.innerHTML=ic('x')+' Detener'; btn.disabled=false;
     btn.onclick=()=>{stopScanner();viewScanner($('#view'));};
-    setupTorch();
+    setupTorch(); acquireWakeLock();
   }).catch(err=>{ window.__scanning=false; btn.disabled=false; btn.innerHTML=ic('scan')+' Iniciar cámara'; $('#scan-fallback').classList.remove('hidden'); toast('No se pudo abrir la cámara','err'); });
 }
 /* Linterna: aparece solo si el dispositivo la soporta (clave con poca luz). */
@@ -1201,6 +1212,27 @@ async function flushScanQueue(){
   if(conflicts) toast(conflicts+' ya estaban registrados en otra puerta','warn');
 }
 window.addEventListener('online', ()=>{ flushScanQueue(); });
+
+/* Sincronizar la lista de entradas a mano (para dejar el celular listo para offline). */
+let LAST_SYNC = 0;
+async function syncNow(){
+  const btn=$('#sync-now');
+  if(navigator.onLine===false){ toast('Sin conexión — conéctate para sincronizar','warn'); return; }
+  if(btn){ btn.disabled=true; btn.innerHTML=ic('download')+' Sincronizando…'; }
+  try{
+    stopScanner();
+    await cloudLoadAll(); LAST_SYNC=Date.now();
+    try{ await flushScanQueue(); }catch(e){}
+    toast('Entradas actualizadas','ok');
+  }catch(e){ toast('No se pudo sincronizar','err'); }
+  if($('.scanner')) viewScanner($('#view'));
+}
+
+/* Mantener la pantalla encendida mientras se escanea (evita que el cel se duerma). */
+let _wakeLock=null;
+async function acquireWakeLock(){ try{ if('wakeLock' in navigator){ _wakeLock=await navigator.wakeLock.request('screen'); } }catch(e){} }
+function releaseWakeLock(){ try{ if(_wakeLock){ _wakeLock.release(); _wakeLock=null; } }catch(e){} }
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible' && window.__scanning && !_wakeLock) acquireWakeLock(); });
 
 async function processScan(eid, raw){
   // 1) Resolver la entrada localmente: instantáneo y funciona aunque no haya señal.
@@ -1537,8 +1569,9 @@ async function boot(){
   render();
 }
 let ADMIN_EMAIL='';
+let IS_SCANNER=false;
 async function loadAdmin(){
-  try{ await cloudLoadAll(); }
+  try{ await cloudLoadAll(); LAST_SYNC=Date.now(); }
   catch(e){ console.error(e); toast('No se pudieron cargar los datos','err'); renderAuthPage('login'); return; }
   try{ const s=await cloudSession(); ADMIN_EMAIL=(s&&s.user&&s.user.email)||''; }catch(e){}
   if(!state.settings.symbol) state.settings.symbol = state.settings.currency==='USD'?'$':'S/';
@@ -1546,7 +1579,28 @@ async function loadAdmin(){
   subscribeRealtime();
   flushScanQueue();   // sincroniza ingresos que quedaron offline en una sesión previa
 }
-async function logout(){ try{ await cloudSignOut(); }catch(e){} state=null; ADMIN_EMAIL=''; location.hash='#/home'; render(); }
+async function logout(){ try{ await cloudSignOut(); }catch(e){} state=null; ADMIN_EMAIL=''; IS_SCANNER=false; location.hash='#/home'; render(); }
+
+/* Pantalla exclusiva del escáner (seguridad en la puerta): sin barra lateral,
+   sin gestión — solo escanear. El servidor igual bloquea cualquier escritura. */
+function renderScannerOnly(){
+  stopScanner();
+  const e=DB.activeEvent();
+  $('#app').className='app-shell';
+  $('#app').innerHTML=`<div class="scan-shell">
+    <header class="scan-top">
+      <a class="brand-wordmark scan-wm" href="#/scanner" aria-label="Connect"></a>
+      <div class="scan-top-actions">
+        ${state.events.length>1?`<select class="scan-evsel" onchange="scanSetEvent(this.value)">${state.events.map(ev=>`<option value="${ev.id}" ${e&&ev.id===e.id?'selected':''}>${esc(ev.name)}</option>`).join('')}</select>`:''}
+        <button class="btn btn-ghost btn-sm" onclick="logout()">${ic('back')} Salir</button>
+      </div>
+    </header>
+    <main class="scan-main" id="view"></main>
+  </div>`;
+  viewScanner($('#view'));
+}
+/* Cambio de evento del escáner: solo local, sin escribir al servidor. */
+function scanSetEvent(id){ state.settings.activeEventId=id; renderScannerOnly(); }
 
 /* ---------- Cabecera pública (clientes) ---------- */
 function custShell(inner, loggedIn, active){
@@ -1570,9 +1624,11 @@ async function renderCustomerHome(){
   const s = await cloudSession(); const loggedIn=!!s;
   let cta;
   if(loggedIn){
-    const admin = await cloudIsAdmin();
-    cta = admin
+    const role = await cloudRole();
+    cta = role==='admin'
       ? `<a class="btn btn-primary btn-lg" href="#/dashboard">${ic('dash')} Panel de administración</a><a class="btn btn-ghost btn-lg" href="#/cuenta">Mis entradas</a>`
+      : role==='scanner'
+      ? `<a class="btn btn-primary btn-lg" href="#/scanner">${ic('scan')} Abrir escáner</a>`
       : `<a class="btn btn-primary btn-lg" href="#/cuenta">${ic('ticket')} Ver mis entradas</a>`;
   } else {
     cta = `<a class="btn btn-primary btn-lg" href="#/registro">Crear cuenta</a><a class="btn btn-ghost btn-lg" href="#/login">Iniciar sesión</a>`;
@@ -1635,8 +1691,8 @@ async function doLogin(){
   try{
     const { error } = await cloudSignIn(email, pass);
     if(error){ err.textContent=isUnconfirmed(error)?'Tu cuenta todavía no está confirmada. Revisa tu correo, o escríbenos para activarla.':'Email o contraseña incorrectos.'; btn.disabled=false; btn.textContent='Entrar'; return; }
-    const admin = await cloudIsAdmin();
-    location.hash = admin ? '#/dashboard' : '#/cuenta';
+    const role = await cloudRole();
+    location.hash = role==='admin' ? '#/dashboard' : role==='scanner' ? '#/scanner' : '#/cuenta';
     render();
   }catch(e){ err.textContent='Error de conexión. Prueba de nuevo.'; btn.disabled=false; btn.textContent='Entrar'; }
 }

@@ -172,6 +172,15 @@ async function cloudSignUp(email, password, name){
   return await sb.auth.signUp({ email, password, options:{ data:{ name } } });
 }
 async function cloudIsAdmin(){ try{ const { data } = await sb.rpc('is_admin'); return data === true; }catch(e){ return false; } }
+/* Rol efectivo del usuario logueado: 'admin' | 'scanner' | 'customer'.
+   El escáner puede leer entradas y registrar ingresos, pero NO gestionar nada. */
+async function cloudRole(){
+  try{ if(await cloudIsAdmin()) return 'admin'; }catch(e){}
+  try{ const u = await cloudCurrentUser();
+    if(u){ const { data } = await sb.from('profiles').select('role').eq('id', u.id).maybeSingle();
+      if(data && data.role === 'scanner') return 'scanner'; } }catch(e){}
+  return 'customer';
+}
 async function cloudCurrentUser(){ const { data } = await sb.auth.getUser(); return data && data.user; }
 async function cloudMyProfile(){
   const u = await cloudCurrentUser(); if(!u) return null;
