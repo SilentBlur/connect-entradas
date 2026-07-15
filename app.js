@@ -486,7 +486,7 @@ function renderTypes(){
     <div class="card pad-sm mb12" style="background:var(--surface-2)">
       <div class="between mb12">
         <div class="row gap8"><span style="width:10px;height:10px;border-radius:3px;background:${t.color}"></span><b>${esc(t.name)||'Tipo '+(i+1)}</b></div>
-        <button class="btn-icon btn-xs btn-ghost" onclick="rmType(${i})">${ic('trash')}</button>
+        <button class="btn-icon btn-xs btn-ghost btn-del" title="Quitar" onclick="rmType(${i})">${ic('trash')}</button>
       </div>
       <div class="field-row mb8">
         <div><label class="label">Nombre</label><input value="${esc(t.name)}" oninput="upType(${i},'name',this.value)"></div>
@@ -652,7 +652,7 @@ function ticketRow(t,e){
     <td>${cb?esc(cb.name):'<span class="dim">—</span>'}</td>
     <td>${payBadge(t)}</td>
     <td>${statusTicket(t)}</td>
-    <td><div class="t-actions"><button class="btn-icon btn-xs btn-ghost" title="Ver QR" onclick="showTicketModal('${t.id}')">${ic('eye')}</button><button class="btn-icon btn-xs btn-ghost" title="Anular" onclick="voidTicket('${t.id}')">${ic('trash')}</button></div></td>
+    <td><div class="t-actions"><button class="btn-icon btn-xs btn-ghost" title="Ver QR" onclick="showTicketModal('${t.id}')">${ic('eye')}</button><button class="btn-icon btn-xs btn-ghost btn-del" title="Anular" onclick="voidTicket('${t.id}')">${ic('trash')}</button></div></td>
   </tr>`;
 }
 function ticketCard(t,e){
@@ -671,7 +671,7 @@ function ticketCard(t,e){
     <div class="tk-cabeza">${cb?('Cabeza · '+esc(cb.name)):'<span class="dim">Sin cabeza</span>'}</div>
     <div class="tk-actions">
       <button class="btn btn-ghost btn-sm grow" onclick="showTicketModal('${t.id}')">${ic('eye')} Ver QR</button>
-      <button class="btn-icon btn-ghost" title="Anular" onclick="voidTicket('${t.id}')">${ic('trash')}</button>
+      <button class="btn-icon btn-ghost btn-del" title="Anular" onclick="voidTicket('${t.id}')">${ic('trash')}</button>
     </div>
   </div>`;
 }
@@ -990,7 +990,7 @@ function typeCardHTML(e,ty){
     <div class="divider"></div>
     <div class="between">
       <label class="row gap8" style="cursor:pointer"><span class="switch"><input type="checkbox" ${inactive?'':'checked'} onchange="toggleTypeActive('${e.id}','${ty.id}')"><span class="track"></span></span><span class="muted" style="font-size:12.5px">${inactive?'Inactivo':'Activo'}</span></label>
-      <div class="row gap6"><button class="btn-icon btn-xs btn-ghost" title="Eliminar" onclick="deleteType('${e.id}','${ty.id}')">${ic('trash')}</button><button class="btn btn-secondary btn-sm" onclick="openTypeForm('${e.id}','${ty.id}')">${ic('edit')} Editar</button></div>
+      <div class="row gap6"><button class="btn-icon btn-xs btn-ghost btn-del" title="Eliminar" onclick="deleteType('${e.id}','${ty.id}')">${ic('trash')}</button><button class="btn btn-secondary btn-sm" onclick="openTypeForm('${e.id}','${ty.id}')">${ic('edit')} Editar</button></div>
     </div>
   </div>`;
 }
