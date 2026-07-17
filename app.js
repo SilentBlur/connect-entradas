@@ -434,9 +434,11 @@ function eventCard(e){
    VIEW: Crear / Editar evento
    ============================================================ */
 let formCover = null;
+let formPoster = null;
 function viewEventForm(v, id){
   const e = id? DB.event(id) : null;
   formCover = e? e.cover : null;
+  formPoster = e? (e.poster||'') : null;
   const t = e? e.types : [];
   window._types = JSON.parse(JSON.stringify(t));
   $('#ptitle').textContent = e?'Editar evento':'Crear evento';
@@ -466,11 +468,19 @@ function viewEventForm(v, id){
     </div>
     <div>
       <div class="card mb16">
-        <label class="label">Imagen / Flyer</label>
+        <label class="label">Imagen interna (panel)</label>
         <div class="uploader ${formCover?'has-img':''}" id="cover-up" onclick="$('#cover-file').click()">
-          ${formCover?`<img src="${formCover}"><div class="ov">Cambiar imagen</div>`:`<div>${ic('plus')}<div class="mt8 muted">Subir flyer del evento</div><div class="hint dim">JPG o PNG · se optimiza automáticamente</div></div>`}
+          ${formCover?`<img src="${formCover}"><div class="ov">Cambiar imagen</div>`:`<div>${ic('plus')}<div class="mt8 muted">Subir imagen horizontal</div><div class="hint dim">Horizontal 16:9 · 1200×675 px · JPG o PNG</div></div>`}
         </div>
-        <input type="file" id="cover-file" accept="image/*" class="hidden" onchange="onCover(event)">
+        <input type="file" id="cover-file" accept="image/*" class="hidden" onchange="onImg(event,'cover')">
+        <div class="hint dim" style="margin-top:8px">Sale en la lista de <b>Eventos</b> y en el panel de administración.</div>
+
+        <label class="label" style="margin-top:18px">Imagen de canje (flyer)</label>
+        <div class="uploader ${formPoster?'has-img':''}" id="poster-up" onclick="$('#poster-file').click()">
+          ${formPoster?`<img src="${formPoster}"><div class="ov">Cambiar imagen</div>`:`<div>${ic('plus')}<div class="mt8 muted">Subir flyer vertical</div><div class="hint dim">Vertical 4:5 · 1080×1350 px · JPG o PNG</div></div>`}
+        </div>
+        <input type="file" id="poster-file" accept="image/*" class="hidden" onchange="onImg(event,'poster')">
+        <div class="hint dim" style="margin-top:8px">Es la que ve el comprador en la <b>página de canje</b>. Si la dejas vacía, se usa la interna.</div>
       </div>
       <div class="card">
         <div class="between mb16"><div class="section-title">Tipos de entrada</div><button class="btn btn-secondary btn-sm" onclick="addType()">${ic('plus')} Añadir</button></div>
@@ -506,16 +516,19 @@ function renderTypes(){
 function addType(){ window._types.push({id:uid(),name:'',kind:'general',access:'paid',price:0,capacity:100,color:['#FFFFFF','#C0C0C0','#9E9E9E','#7E7E7E','#B5B5B5','#6A6A6A'][window._types.length%6],includes:[],desc:''}); renderTypes(); }
 function rmType(i){ window._types.splice(i,1); renderTypes(); }
 function upType(i,k,val){ window._types[i][k] = (k==='price'||k==='capacity')? Number(val) : val; if(k==='access'&&val!=='paid'){window._types[i].price=0;} if(k==='access') renderTypes(); }
-function onCover(ev){
+function onImg(ev, which){
   const file = ev.target.files[0]; if(!file) return;
   const reader = new FileReader();
   reader.onload = e=>{
     const img = new Image();
     img.onload = ()=>{
-      const max=1000, sc=Math.min(1,max/img.width); const c=document.createElement('canvas');
-      c.width=img.width*sc; c.height=img.height*sc; c.getContext('2d').drawImage(img,0,0,c.width,c.height);
-      formCover = c.toDataURL('image/jpeg',0.82);
-      const up=$('#cover-up'); up.classList.add('has-img'); up.innerHTML=`<img src="${formCover}"><div class="ov">Cambiar imagen</div>`;
+      const max=1100, sc=Math.min(1, max/Math.max(img.width,img.height)); const c=document.createElement('canvas');
+      c.width=Math.round(img.width*sc); c.height=Math.round(img.height*sc);
+      c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+      const data = c.toDataURL('image/jpeg',0.82);
+      if(which==='poster'){ formPoster=data; } else { formCover=data; }
+      const up=$('#'+(which==='poster'?'poster':'cover')+'-up');
+      if(up){ up.classList.add('has-img'); up.innerHTML=`<img src="${data}"><div class="ov">Cambiar imagen</div>`; }
     };
     img.src = e.target.result;
   };
@@ -527,7 +540,7 @@ function saveEvent(id){
   const data = {
     name, description:$('#f-desc').value.trim(), dateISO:$('#f-date').value, time:$('#f-time').value,
     venue:$('#f-venue').value.trim(), address:$('#f-address').value.trim(), city:$('#f-city').value.trim(),
-    status:$('#f-status').value, cover:formCover,
+    status:$('#f-status').value, cover:formCover, poster:formPoster,
     types: window._types.map(t=>({...t, name:t.name.trim()||'Entrada', price:Number(t.price)||0, capacity:Number(t.capacity)||100}))
   };
   if(id){ Object.assign(DB.event(id), data); toast('Evento actualizado','ok'); }
@@ -852,6 +865,7 @@ function viewCabezaDetail(v,id){
   const c=DB.cabeza(id); if(!c) return go('cabezas');
   const e=DB.activeEvent();
   $('#ptitle').textContent=c.name; $('#crumb').textContent='Cabezas';
+  cabSel={on:false,ids:new Set(),cid:id};
   const ts=e?DB.ticketsFor(e.id).filter(t=>t.cabezaId===id):[];
   const rev=ts.filter(t=>t.payment==='paid'&&t.status!=='void').reduce((a,t)=>a+(+t.price||0),0);
   v.innerHTML=`<div class="row mb16 between"><button class="btn btn-ghost btn-sm" onclick="go('cabezas')">${ic('back')} Cabezas</button>
@@ -869,8 +883,50 @@ function viewCabezaDetail(v,id){
     <div class="card"><div class="section-title mb8">Su página de entradas</div><p class="muted mb16" style="font-size:13px">Solo las entradas de ${esc(c.name)}: códigos, reclamadas y quién ya ingresó. Envíasela para que controle sus ventas sin entrar al panel de administrador.</p>${e?linkBox(panelUrl(e.id,id)):'<div class="muted">Selecciona un evento.</div>'}
     <div class="row gap8 mt12"><button class="btn btn-secondary btn-sm" onclick="window.open('#/panel/${e?.id}/${id}','_blank')">${ic('eye')} Abrir página</button><button class="btn btn-ghost btn-sm" onclick="waPanelLink('${id}','${e?.id}')">${ic('whats')} Enviar por WhatsApp</button></div></div>
   </div>
-  <div class="card"><div class="section-title mb16">Entradas de ${esc(c.name)}</div>${ts.length?`<div class="table-wrap"><table><thead><tr><th>Asistente</th><th>Tipo</th><th>Código</th><th>Estado</th></tr></thead><tbody>${ts.map(t=>`<tr><td>${t.holder.name?esc(t.holder.name):'<span class="muted">sin reclamar</span>'}</td><td>${esc(DB.type(e,t.typeId)?.name||'')}</td><td><span class="code-chip">${t.code}</span></td><td>${statusTicket(t)}</td></tr>`).join('')}</tbody></table></div>`:'<div class="muted" style="font-size:13px">Aún no tiene entradas en este evento.</div>'}</div>`;
+  <div id="cab-tix">${cabTixHost(id)}</div>`;
 }
+/* ---- Entradas del cabeza: anular/eliminar (individual y en lote) + exportar códigos ---- */
+let cabSel = { on:false, ids:new Set(), cid:null };
+function cabTixHost(id){
+  const c=DB.cabeza(id); const e=DB.activeEvent();
+  const ts=e?DB.ticketsFor(e.id).filter(t=>t.cabezaId===id):[];
+  const live=ts.filter(t=>t.status!=='void');
+  const head=`<div class="between mb16" style="flex-wrap:wrap;gap:10px">
+    <div class="section-title">Entradas de ${esc(c.name)}</div>
+    <div class="row gap8">
+      ${ts.length?`<button class="btn btn-ghost btn-sm" onclick="exportCabezaCodes('${id}')">${ic('download')} Exportar Excel</button>`:''}
+      ${live.length?`<button class="btn ${cabSel.on?'btn-secondary':'btn-ghost'} btn-sm" onclick="toggleCabSel('${id}')">${ic('check2')} ${cabSel.on?'Salir de selección':'Selección múltiple'}</button>`:''}
+    </div></div>`;
+  if(!ts.length) return `<div class="card">${head}<div class="muted" style="font-size:13px">Aún no tiene entradas en este evento.</div></div>`;
+  const bar = cabSel.on ? `<div class="between mb12" style="background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:10px 12px;flex-wrap:wrap;gap:10px">
+      <span class="muted" style="font-size:13px">${cabSel.ids.size} seleccionada(s)</span>
+      <div class="row gap8">
+        <button class="btn btn-danger btn-sm" ${cabSel.ids.size?'':'disabled'} onclick="voidCabSelected('${id}')">${ic('trash')} Anular</button>
+        <button class="btn btn-ghost btn-sm" ${cabSel.ids.size?'':'disabled'} onclick="deleteCabSelected('${id}')">${ic('x')} Eliminar</button>
+      </div></div>` : '';
+  const rows = ts.map(t=>{
+    const voided=t.status==='void';
+    return `<tr style="${voided?'opacity:.5':''}">
+      ${cabSel.on?`<td>${voided?'':`<input type="checkbox" class="cab-chk" ${cabSel.ids.has(t.id)?'checked':''} onchange="cabSelToggle('${t.id}','${id}')">`}</td>`:''}
+      <td>${t.holder.name?esc(t.holder.name):'<span class="muted">sin reclamar</span>'}</td>
+      <td>${esc(DB.type(e,t.typeId)?.name||'')}</td>
+      <td><span class="code-chip">${t.code}</span></td>
+      <td>${statusTicket(t)}</td>
+      <td style="text-align:right">${(!cabSel.on&&!voided)?`<button class="btn-icon btn-xs btn-ghost btn-del" title="Anular" onclick="voidTicket('${t.id}')">${ic('trash')}</button>`:''}</td>
+    </tr>`;
+  }).join('');
+  const allChk = live.length && live.every(t=>cabSel.ids.has(t.id));
+  return `<div class="card">${head}${bar}<div class="table-wrap"><table>
+    <thead><tr>${cabSel.on?`<th style="width:34px"><input type="checkbox" class="cab-chk" ${allChk?'checked':''} onchange="cabSelAll('${id}',this.checked)"></th>`:''}<th>Asistente</th><th>Tipo</th><th>Código</th><th>Estado</th><th></th></tr></thead>
+    <tbody>${rows}</tbody></table></div></div>`;
+}
+function cabTixRender(id){ const h=$('#cab-tix'); if(h) h.innerHTML=cabTixHost(id); }
+function toggleCabSel(id){ cabSel.on=!cabSel.on; cabSel.ids.clear(); cabSel.cid=id; cabTixRender(id); }
+function cabSelToggle(tid,id){ if(cabSel.ids.has(tid)) cabSel.ids.delete(tid); else cabSel.ids.add(tid); cabTixRender(id); }
+function cabSelAll(id,checked){ const e=DB.activeEvent(); const live=e?DB.ticketsFor(e.id).filter(t=>t.cabezaId===id&&t.status!=='void'):[]; cabSel.ids = checked? new Set(live.map(t=>t.id)) : new Set(); cabTixRender(id); }
+function voidCabSelected(id){ const ids=[...cabSel.ids]; if(!ids.length) return; confirmModal('Anular entradas', `Se anularán ${ids.length} entrada(s). No permitirán el ingreso. ¿Continuar?`, ()=>{ ids.forEach(tid=>{ const t=state.tickets.find(x=>x.id===tid); if(t) t.status='void'; }); cabSel={on:false,ids:new Set(),cid:id}; DB.save(); render(); toast(ids.length+' entrada(s) anulada(s)','warn'); }); }
+function deleteCabSelected(id){ const ids=[...cabSel.ids]; if(!ids.length) return; confirmModal('Eliminar entradas', `Se eliminarán ${ids.length} entrada(s) de forma permanente. Esta acción no se puede deshacer.`, ()=>{ const set=new Set(ids); state.tickets=state.tickets.filter(t=>!set.has(t.id)); cabSel={on:false,ids:new Set(),cid:id}; DB.save(); render(); toast(ids.length+' entrada(s) eliminada(s)','warn'); }); }
+function exportCabezaCodes(id){ const e=DB.activeEvent(); if(!e) return; const ids=DB.ticketsFor(e.id).filter(t=>t.cabezaId===id).map(t=>t.id); if(!ids.length) return toast('No hay entradas para exportar','warn'); exportCodes(e.id, ids); }
 function waLink(cid,eid){ const c=DB.cabeza(cid); const e=DB.event(eid); if(!c||!e) return; const url=canjeUrl(eid); const msg=`¡Hola ${c.name.split(' ')[0]}! Este es el link para que tus compradores reclamen su entrada a *${e.name}* (${longDate(e.dateISO)}) con el código que les des:\n${url}`; window.open(`https://wa.me/${(c.phone||'').replace(/\D/g,'')}?text=${encodeURIComponent(msg)}`,'_blank'); }
 function waPanelLink(cid,eid){ const c=DB.cabeza(cid); const e=DB.event(eid); if(!c||!e) return; const url=panelUrl(eid,cid); const msg=`¡Hola ${c.name.split(' ')[0]}! Este es tu panel de *${e.name}*: ahí ves tus entradas, tus códigos y quién ya ingresó:\n${url}`; window.open(`https://wa.me/${(c.phone||'').replace(/\D/g,'')}?text=${encodeURIComponent(msg)}`,'_blank'); }
 
@@ -1376,7 +1432,7 @@ async function renderClaim(eid, cid, opts){
     <div class="evp-top"><div class="brand-wordmark wm"></div></div>
     <div class="evp-grid">
       <div class="evp-media">
-        ${e.cover? `<img src="${e.cover}" alt="${esc(e.name)}">` : `<div class="fallback"><div class="brand-rombo rombo" style="width:50%;height:50%"></div></div>`}
+        ${(e.poster||e.cover)? `<img src="${e.poster||e.cover}" alt="${esc(e.name)}">` : `<div class="fallback"><div class="brand-rombo rombo" style="width:50%;height:50%"></div></div>`}
         <div class="chip"><div class="d">${sd.d}</div><div class="m">${sd.m}</div></div>
         <div class="status">${statusBadge(e)}</div>
       </div>

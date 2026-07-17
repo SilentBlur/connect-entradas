@@ -23,7 +23,8 @@ create table if not exists public.events (
   venue       text,
   address     text,
   city        text,
-  cover       text,
+  cover       text,            -- imagen interna/horizontal (panel + lista de eventos)
+  poster      text,            -- imagen vertical/flyer (página de canje)
   created_at  bigint
 );
 

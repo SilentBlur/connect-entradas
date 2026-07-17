@@ -18,10 +18,13 @@ const sb = window.supabase.createClient(SUPA_URL, SUPA_KEY, {
 /* ---------- Mapeo fila (snake_case DB)  <->  objeto (camelCase app) ---------- */
 const eventToRow = e => ({ id:e.id, name:e.name, status:e.status||'draft', description:e.description||null,
   date_iso:e.dateISO||null, start_time:e.time||null, venue:e.venue||null, address:e.address||null,
-  city:e.city||null, cover:e.cover||null, created_at:e.createdAt||null });
+  city:e.city||null, cover:e.cover||null, created_at:e.createdAt||null,
+  // 'poster' solo se envía si hay una imagen — así editar eventos sigue funcionando
+  // aunque todavía no exista la columna en la base (se agrega con un ALTER TABLE).
+  ...(e.poster ? { poster:e.poster } : {}) });
 const rowToEvent = r => ({ id:r.id, name:r.name, status:r.status, description:r.description||'',
   dateISO:r.date_iso||'', time:r.start_time||'', venue:r.venue||'', address:r.address||'', city:r.city||'',
-  cover:r.cover||'', createdAt:r.created_at||0, types:[] });
+  cover:r.cover||'', poster:r.poster||'', createdAt:r.created_at||0, types:[] });
 
 const typeToRow = (t, eventId) => ({ id:t.id, event_id:eventId, name:t.name, kind:t.kind||'general',
   access:t.access||'paid', price:Number(t.price)||0, capacity:Number(t.capacity)||0, color:t.color||null,
