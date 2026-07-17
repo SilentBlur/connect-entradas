@@ -210,6 +210,8 @@ select option{background:#1C1A17}
 .uploader.has-img img{width:100%;display:block;max-height:220px;object-fit:cover}
 .uploader .ov{position:absolute;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;opacity:0;transition:.15s;font-size:13px;font-weight:600}
 .uploader.has-img:hover .ov{opacity:1}
+/* Tipos de entrada a lo ancho: 1 tipo ocupa todo, 2+ se acomodan lado a lado */
+.types-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(430px,100%),1fr));gap:12px;align-items:start}
 
 /* ============================================================
    CARDS

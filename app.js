@@ -466,27 +466,25 @@ function viewEventForm(v, id){
           <option value="past" ${e?.status==='past'?'selected':''}>Finalizado</option>
         </select></div>
     </div>
-    <div>
-      <div class="card mb16">
-        <label class="label">Imagen interna (panel)</label>
-        <div class="uploader ${formCover?'has-img':''}" id="cover-up" onclick="$('#cover-file').click()">
-          ${formCover?`<img src="${formCover}"><div class="ov">Cambiar imagen</div>`:`<div>${ic('plus')}<div class="mt8 muted">Subir imagen horizontal</div><div class="hint dim">Horizontal 16:9 · 1200×675 px · JPG o PNG</div></div>`}
-        </div>
-        <input type="file" id="cover-file" accept="image/*" class="hidden" onchange="onImg(event,'cover')">
-        <div class="hint dim" style="margin-top:8px">Sale en la lista de <b>Eventos</b> y en el panel de administración.</div>
+    <div class="card">
+      <label class="label">Imagen interna (panel)</label>
+      <div class="uploader ${formCover?'has-img':''}" id="cover-up" onclick="$('#cover-file').click()">
+        ${formCover?`<img src="${formCover}"><div class="ov">Cambiar imagen</div>`:`<div>${ic('plus')}<div class="mt8 muted">Subir imagen horizontal</div><div class="hint dim">Horizontal 16:9 · 1200×675 px · JPG o PNG</div></div>`}
+      </div>
+      <input type="file" id="cover-file" accept="image/*" class="hidden" onchange="onImg(event,'cover')">
+      <div class="hint dim" style="margin-top:8px">Sale en la lista de <b>Eventos</b> y en el panel de administración.</div>
 
-        <label class="label" style="margin-top:18px">Imagen de canje (flyer)</label>
-        <div class="uploader ${formPoster?'has-img':''}" id="poster-up" onclick="$('#poster-file').click()">
-          ${formPoster?`<img src="${formPoster}"><div class="ov">Cambiar imagen</div>`:`<div>${ic('plus')}<div class="mt8 muted">Subir flyer vertical</div><div class="hint dim">Vertical 4:5 · 1080×1350 px · JPG o PNG</div></div>`}
-        </div>
-        <input type="file" id="poster-file" accept="image/*" class="hidden" onchange="onImg(event,'poster')">
-        <div class="hint dim" style="margin-top:8px">Es la que ve el comprador en la <b>página de canje</b>. Si la dejas vacía, se usa la interna.</div>
+      <label class="label" style="margin-top:18px">Imagen de canje (flyer)</label>
+      <div class="uploader ${formPoster?'has-img':''}" id="poster-up" onclick="$('#poster-file').click()">
+        ${formPoster?`<img src="${formPoster}"><div class="ov">Cambiar imagen</div>`:`<div>${ic('plus')}<div class="mt8 muted">Subir flyer vertical</div><div class="hint dim">Vertical 4:5 · 1080×1350 px · JPG o PNG</div></div>`}
       </div>
-      <div class="card">
-        <div class="between mb16"><div class="section-title">Tipos de entrada</div><button class="btn btn-secondary btn-sm" onclick="addType()">${ic('plus')} Añadir</button></div>
-        <div id="types-list"></div>
-      </div>
+      <input type="file" id="poster-file" accept="image/*" class="hidden" onchange="onImg(event,'poster')">
+      <div class="hint dim" style="margin-top:8px">Es la que ve el comprador en la <b>página de canje</b>. Si la dejas vacía, se usa la interna.</div>
     </div>
+  </div>
+  <div class="card mt24">
+    <div class="between mb16"><div class="section-title">Tipos de entrada</div><button class="btn btn-secondary btn-sm" onclick="addType()">${ic('plus')} Añadir</button></div>
+    <div id="types-list" class="types-grid"></div>
   </div>
   <div class="row mt24" style="justify-content:flex-end;gap:10px">
     <button class="btn btn-ghost" onclick="go('events')">Cancelar</button>
@@ -497,7 +495,7 @@ function viewEventForm(v, id){
 function renderTypes(){
   const box = $('#types-list'); if(!box) return;
   box.innerHTML = window._types.map((t,i)=>`
-    <div class="card pad-sm mb12" style="background:var(--surface-2)">
+    <div class="card pad-sm" style="background:var(--surface-2)">
       <div class="between mb12">
         <div class="row gap8"><span style="width:10px;height:10px;border-radius:3px;background:${t.color}"></span><b>${esc(t.name)||'Tipo '+(i+1)}</b></div>
         <button class="btn-icon btn-xs btn-ghost btn-del" title="Quitar" onclick="rmType(${i})">${ic('trash')}</button>
