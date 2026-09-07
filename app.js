@@ -284,7 +284,7 @@ function setActiveEvent(id){ state.settings.activeEventId=id; DB.save(); render(
    ============================================================ */
 let currentScanner = null;
 function go(route){ location.hash = '#/'+route; }
-function stopScanner(){ window.__scanning=false; releaseWakeLock(); if(currentScanner){ try{ currentScanner.stop().then(()=>currentScanner.clear()).catch(()=>{});}catch(e){} currentScanner=null; } }
+function stopScanner(){ window.__scanning=false; releaseWakeLock(); stopWedge(); if(currentScanner){ try{ currentScanner.stop().then(()=>currentScanner.clear()).catch(()=>{});}catch(e){} currentScanner=null; } }
 
 async function render(){
   const hash = location.hash.replace(/^#\/?/, '') || 'home';
@@ -1200,9 +1200,11 @@ function viewScanner(v){
       <div class="divider"><span></span></div>
       <label class="label">Validación manual por código</label>
       <div class="row gap8"><input id="manual-code" placeholder="Ej. RNZ-AB12" style="text-transform:uppercase" onkeydown="if(event.key==='Enter')validateManual('${e.id}')"><button class="btn btn-primary" onclick="validateManual('${e.id}')">${ic('check')} Validar</button></div>
+      <div class="hint dim" style="margin-top:10px">${ic('scan')} ¿Tienes un lector físico (pistola)? Empar&eacute;jalo por Bluetooth y escanea directo — el c&oacute;digo entra solo, sin tocar nada.</div>
     </div>
   </div>`;
   updateQueueBadge();
+  startWedge(e.id);   // captura de lector físico (keyboard-wedge)
 }
 function startScan(eid){
   if(typeof Html5Qrcode==='undefined'){ $('#scan-fallback').classList.remove('hidden'); return toast('Lector no disponible (sin conexión)','err'); }
@@ -1241,6 +1243,37 @@ function onScanHit(eid, txt){
   processScan(eid, txt);
 }
 function validateManual(eid){ const code=$('#manual-code').value.trim().toUpperCase(); if(!code) return; processScan(eid, code); $('#manual-code').value=''; }
+
+/* ---- Modo lector físico (keyboard-wedge) ----
+   Un lector Bluetooth/USB "teclea" el código muy rápido y termina en Enter. Lo
+   detectamos por velocidad (ráfaga) y lo mandamos crudo a processScan (respeta
+   mayúsculas para el QR CNCT|id|token). El tecleo humano lento no se intercepta. */
+let _wedgeHandler=null, _wedgeBuf='', _wedgeT0=0, _wedgeLast=0;
+function startWedge(eid){
+  stopWedge();
+  _wedgeBuf=''; _wedgeT0=0; _wedgeLast=0;
+  _wedgeHandler=(e)=>{
+    const now=Date.now();
+    if(e.key==='Enter'){
+      const fast = _wedgeBuf.length>=5 && (now-_wedgeT0) < (_wedgeBuf.length*45 + 400);
+      if(fast){
+        e.preventDefault(); e.stopPropagation();
+        const code=_wedgeBuf; _wedgeBuf='';
+        const el=e.target; if(el && (el.tagName==='INPUT'||el.tagName==='TEXTAREA')) el.value='';
+        document.querySelector('.scan-result')?.remove();
+        processScan(eid, code);
+      } else { _wedgeBuf=''; }
+      return;
+    }
+    if(e.key && e.key.length===1){
+      if(now-_wedgeLast > 100){ _wedgeBuf=''; _wedgeT0=now; }  // nueva ráfaga (o tecleo humano)
+      _wedgeBuf += e.key;
+      _wedgeLast = now;
+    }
+  };
+  document.addEventListener('keydown', _wedgeHandler, true);
+}
+function stopWedge(){ if(_wedgeHandler){ document.removeEventListener('keydown', _wedgeHandler, true); _wedgeHandler=null; } _wedgeBuf=''; }
 function buzz(kind){ if(navigator.vibrate) navigator.vibrate(kind==='ok'?80:[60,40,60]); }
 function persistLocal(){ try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){} }
 function updateScanStats(){ const e=DB.activeEvent(); if(!e) return; const st=DB.stats(e.id); const box=$('.scan-stats');
@@ -1615,7 +1648,7 @@ async function boot(){
   window.addEventListener('hashchange', render);
   window.addEventListener('resize', ()=>{
     const m = matchMedia('(max-width:680px)').matches; if(m===_wasMobile) return; _wasMobile=m;
-    const e = (typeof DB!=='undefined' && DB.activeEvent) ? DB.activeEvent() : null; if(!e) return;
+    const e = (typeof state!=='undefined' && state && state.settings && DB.activeEvent) ? DB.activeEvent() : null; if(!e) return;
     if(document.getElementById('tickets-host')) refreshTickets(e.id);
     if(document.getElementById('att-host')) refreshAttendees(e.id);
   });
