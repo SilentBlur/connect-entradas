@@ -1201,6 +1201,10 @@ function viewScanner(v){
       <label class="label">Validación manual por código</label>
       <div class="row gap8"><input id="manual-code" placeholder="Ej. RNZ-AB12" style="text-transform:uppercase" onkeydown="if(event.key==='Enter')validateManual('${e.id}')"><button class="btn btn-primary" onclick="validateManual('${e.id}')">${ic('check')} Validar</button></div>
       <div class="hint dim" style="margin-top:10px">${ic('scan')} ¿Tienes un lector físico (pistola)? Empar&eacute;jalo por Bluetooth y escanea directo — el c&oacute;digo entra solo, sin tocar nada.</div>
+      <div class="row gap8" style="margin-top:10px;align-items:center;flex-wrap:wrap">
+        <button class="btn btn-secondary btn-sm" onclick="soundOn()">${ic('check2')} Activar sonido</button>
+        <span class="hint dim" style="margin:0;flex:1;min-width:180px">Sonido <b>agudo</b> = ingreso OK · <b>grave</b> = ya ingres&oacute; o no v&aacute;lida. As&iacute; el personal trabaja <b>sin mirar la pantalla</b>.</span>
+      </div>
     </div>
   </div>`;
   updateQueueBadge();
@@ -1254,6 +1258,7 @@ function startWedge(eid){
   _wedgeBuf=''; _wedgeT0=0; _wedgeLast=0;
   _wedgeHandler=(e)=>{
     const now=Date.now();
+    _audio();  // el tecleo del lector es un gesto válido → deja el sonido listo
     if(e.key==='Enter'){
       const fast = _wedgeBuf.length>=5 && (now-_wedgeT0) < (_wedgeBuf.length*45 + 400);
       if(fast){
@@ -1277,7 +1282,25 @@ function startWedge(eid){
   document.addEventListener('keydown', _wedgeHandler, true);
 }
 function stopWedge(){ if(_wedgeHandler){ document.removeEventListener('keydown', _wedgeHandler, true); _wedgeHandler=null; } _wedgeBuf=''; }
-function buzz(kind){ if(navigator.vibrate) navigator.vibrate(kind==='ok'?80:[60,40,60]); }
+/* Sonido distinto por resultado, para que el personal trabaje DE OÍDO sin mirar
+   la pantalla: OK = ding agudo doble; ya ingresó = tono medio; no válida = buzz grave. */
+let _actx=null;
+function _audio(){ try{ if(!_actx) _actx=new (window.AudioContext||window.webkitAudioContext)(); if(_actx.state==='suspended') _actx.resume(); return _actx; }catch(e){ return null; } }
+function beep(kind){
+  const ac=_audio(); if(!ac) return; const t=ac.currentTime;
+  const spec = kind==='ok' ? [['sine',1046,0,0.10],['sine',1568,0.10,0.16]]
+    : kind==='warn' ? [['square',520,0,0.18],['square',520,0.22,0.20]]
+    : [['sawtooth',196,0,0.30],['sawtooth',150,0.14,0.30]];
+  spec.forEach(([type,f,t0,dur])=>{
+    const o=ac.createOscillator(), g=ac.createGain(); o.type=type; o.frequency.value=f;
+    g.gain.setValueAtTime(0.0001,t+t0); g.gain.exponentialRampToValueAtTime(0.55,t+t0+0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+t0+dur);
+    o.connect(g); g.connect(ac.destination); o.start(t+t0); o.stop(t+t0+dur+0.03);
+  });
+}
+function buzz(kind){ try{ beep(kind); }catch(e){} if(navigator.vibrate) navigator.vibrate(kind==='ok'?90:[70,50,70,50,70]); }
+/* Un toque para "desbloquear" el audio del navegador + demostrar los 3 sonidos. */
+function soundOn(){ _audio(); beep('ok'); setTimeout(()=>beep('warn'),650); setTimeout(()=>beep('err'),1300); toast('Sonido activado: agudo=OK · medio=ya ingresó · grave=no válida','ok'); }
 function persistLocal(){ try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){} }
 function updateScanStats(){ const e=DB.activeEvent(); if(!e) return; const st=DB.stats(e.id); const box=$('.scan-stats');
   if(box) box.innerHTML=`<div class="s"><b>${st.valid}</b><span>Válidas</span></div><div class="s"><b style="color:var(--success)">${st.used}</b><span>Ingresaron</span></div><div class="s"><b>${st.valid-st.used}</b><span>Faltan</span></div>`; }
