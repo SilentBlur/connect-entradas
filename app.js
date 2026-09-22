@@ -1326,11 +1326,12 @@ document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState=
 
 async function processScan(eid, raw){
   // 1) Resolver la entrada localmente: instantáneo y funciona aunque no haya señal.
-  //    Separador tolerante: algunos lectores físicos mandan ESPACIO (o tab) en vez
-  //    de "|" según el layout de teclado. Aceptamos "|", espacios o tabs indistintamente.
+  //    Separador tolerante: según el layout de teclado, un lector físico puede
+  //    mandar el "|" como espacio, "°", "¬", etc. Partimos por CUALQUIER símbolo
+  //    que no sea parte del id/token (letras, dígitos y "_") → funciona con todos.
   const clean = String(raw).trim();
   try{ console.log('[scan] raw:', JSON.stringify(raw), '| tickets cargadas:', (state&&state.tickets?state.tickets.length:0)); }catch(_){}
-  let t=null; const parts = clean.split(/[\s|]+/);
+  let t=null; const parts = clean.split(/[^A-Za-z0-9_]+/).filter(Boolean);
   if(parts[0]==='CNCT'&&parts[1]) t=state.tickets.find(x=>x.id===parts[1]&&x.token===parts[2]);
   if(!t) t=state.tickets.find(x=>x.code===clean.toUpperCase());
   if(!t){
