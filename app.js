@@ -1329,10 +1329,15 @@ async function processScan(eid, raw){
   //    Separador tolerante: algunos lectores físicos mandan ESPACIO (o tab) en vez
   //    de "|" según el layout de teclado. Aceptamos "|", espacios o tabs indistintamente.
   const clean = String(raw).trim();
+  try{ console.log('[scan] raw:', JSON.stringify(raw), '| tickets cargadas:', (state&&state.tickets?state.tickets.length:0)); }catch(_){}
   let t=null; const parts = clean.split(/[\s|]+/);
   if(parts[0]==='CNCT'&&parts[1]) t=state.tickets.find(x=>x.id===parts[1]&&x.token===parts[2]);
   if(!t) t=state.tickets.find(x=>x.code===clean.toUpperCase());
-  if(!t){ showScanResult('err','No válida','Código no reconocido',null); buzz('err'); return; }
+  if(!t){
+    const loaded=(state&&state.tickets?state.tickets.length:0);
+    const detail = loaded ? ('Leído: '+(clean.slice(0,44)||'(vacío)')) : 'No hay entradas cargadas en este dispositivo';
+    showScanResult('err','No válida', detail, null); buzz('err'); return;
+  }
 
   // 2) Chequeos que no dependen del servidor.
   const e=DB.event(t.eventId);
