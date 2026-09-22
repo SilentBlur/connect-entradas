@@ -1269,6 +1269,9 @@ function startWedge(eid){
       if(now-_wedgeLast > 100){ _wedgeBuf=''; _wedgeT0=now; }  // nueva ráfaga (o tecleo humano)
       _wedgeBuf += e.key;
       _wedgeLast = now;
+      // el lector manda espacios en vez de "|": evita que la barra espaciadora
+      // haga scroll de la página (salvo que estés escribiendo en un campo)
+      if(e.key===' '){ const el=e.target; if(!el || (el.tagName!=='INPUT' && el.tagName!=='TEXTAREA')) e.preventDefault(); }
     }
   };
   document.addEventListener('keydown', _wedgeHandler, true);
@@ -1323,9 +1326,12 @@ document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState=
 
 async function processScan(eid, raw){
   // 1) Resolver la entrada localmente: instantáneo y funciona aunque no haya señal.
-  let t=null; const parts=String(raw).split('|');
+  //    Separador tolerante: algunos lectores físicos mandan ESPACIO (o tab) en vez
+  //    de "|" según el layout de teclado. Aceptamos "|", espacios o tabs indistintamente.
+  const clean = String(raw).trim();
+  let t=null; const parts = clean.split(/[\s|]+/);
   if(parts[0]==='CNCT'&&parts[1]) t=state.tickets.find(x=>x.id===parts[1]&&x.token===parts[2]);
-  if(!t) t=state.tickets.find(x=>x.code===String(raw).trim().toUpperCase());
+  if(!t) t=state.tickets.find(x=>x.code===clean.toUpperCase());
   if(!t){ showScanResult('err','No válida','Código no reconocido',null); buzz('err'); return; }
 
   // 2) Chequeos que no dependen del servidor.
