@@ -1355,8 +1355,13 @@ async function processScan(eid, raw){
   const clean = String(raw).trim();
   try{ console.log('[scan] raw:', JSON.stringify(raw), '| tickets cargadas:', (state&&state.tickets?state.tickets.length:0)); }catch(_){}
   let t=null; const parts = clean.split(/[^A-Za-z0-9_]+/).filter(Boolean);
-  if(parts[0]==='CNCT'&&parts[1]) t=state.tickets.find(x=>x.id===parts[1]&&x.token===parts[2]);
-  if(!t) t=state.tickets.find(x=>x.code===clean.toUpperCase());
+  // Insensible a mayúsculas: si el lector tiene Bloq Mayús activo, invierte el
+  // case de las letras (CNCT→cnct, tk→TK…). Comparamos todo en minúsculas.
+  if(parts[0] && parts[0].toUpperCase()==='CNCT' && parts[1]){
+    const pid=parts[1].toLowerCase(), ptok=(parts[2]||'').toLowerCase();
+    t=state.tickets.find(x=>(x.id||'').toLowerCase()===pid && (x.token||'').toLowerCase()===ptok);
+  }
+  if(!t) t=state.tickets.find(x=>(x.code||'').toUpperCase()===clean.toUpperCase());
   if(!t){
     const loaded=(state&&state.tickets?state.tickets.length:0);
     const detail = loaded ? ('Leído: '+(clean.slice(0,44)||'(vacío)')) : 'No hay entradas cargadas en este dispositivo';
